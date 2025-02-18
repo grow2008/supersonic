@@ -101,7 +101,9 @@ export const getFormattedValue = (value: number | string, remainZero?: boolean) 
 
 export const formatNumberWithCN = (num: number) => {
   if (isNaN(num)) return '-';
-  if (Math.abs(+num) >= 10000) {
+  if (num >= 100000000) {
+    return (num / 100000000).toFixed(1) + '亿';
+  } else if (num >= 10000) {
     return (num / 10000).toFixed(1) + '万';
   } else {
     return formatByDecimalPlaces(num, 2);
