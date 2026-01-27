@@ -78,10 +78,24 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
       const height = paramOptions?.find(
         (option: any) => option.paramType === 'FORWARD' && option.key === 'height',
       )?.value;
+      const isSuperset = detail.type === PluginTypeEnum.SUPERSET;
       form.setFieldsValue({
         ...detail,
         url: detail.config?.url,
-        height,
+        height: isSuperset ? detail.config?.height : height,
+        enabled: isSuperset ? detail.config?.enabled : undefined,
+        baseUrl: isSuperset ? detail.config?.baseUrl : undefined,
+        accessToken: isSuperset ? detail.config?.accessToken : undefined,
+        timeoutSeconds: isSuperset ? detail.config?.timeoutSeconds : undefined,
+        datasetId: isSuperset ? detail.config?.datasetId : undefined,
+        databaseId: isSuperset ? detail.config?.databaseId : undefined,
+        schema: isSuperset ? detail.config?.schema : undefined,
+        datasourceType: isSuperset ? detail.config?.datasourceType : undefined,
+        vizType: isSuperset ? detail.config?.vizType : undefined,
+        embedPath: isSuperset ? detail.config?.embedPath : undefined,
+        formData: isSuperset
+          ? JSON.stringify(detail.config?.formData || {}, null, 2)
+          : undefined,
       });
       setDataSetList(detail.dataSetList || []);
       if (paramOptions?.length > 0) {
@@ -149,23 +163,51 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
   const onOk = async () => {
     const values = await form.validateFields();
     setConfirmLoading(true);
-    let paramOptions = isArray(filters)
-      ? filters?.filter(
-          (filter) =>
-            typeof filter === 'object' && (filter.paramType !== null || filter.value != null),
-        )
-      : [];
-    paramOptions = paramOptions.concat([
-      {
-        paramType: ParamTypeEnum.FORWARD,
-        key: 'height',
-        value: values.height || undefined,
-      },
-    ]);
-    const config = {
-      url: values.url,
-      paramOptions,
-    };
+    let config: any = {};
+    if (values.type === PluginTypeEnum.SUPERSET) {
+      let formDataValue = undefined;
+      if (values.formData) {
+        try {
+          formDataValue = JSON.parse(values.formData);
+        } catch (error) {
+          message.error('formData不是合法的JSON');
+          setConfirmLoading(false);
+          return;
+        }
+      }
+      config = {
+        enabled: values.enabled !== false,
+        baseUrl: values.baseUrl,
+        accessToken: values.accessToken,
+        timeoutSeconds: values.timeoutSeconds,
+        datasetId: values.datasetId,
+        databaseId: values.databaseId,
+        schema: values.schema,
+        datasourceType: values.datasourceType,
+        vizType: values.vizType,
+        formData: formDataValue,
+        embedPath: values.embedPath,
+        height: values.height,
+      };
+    } else {
+      let paramOptions = isArray(filters)
+        ? filters?.filter(
+            (filter) =>
+              typeof filter === 'object' && (filter.paramType !== null || filter.value != null),
+          )
+        : [];
+      paramOptions = paramOptions.concat([
+        {
+          paramType: ParamTypeEnum.FORWARD,
+          key: 'height',
+          value: values.height || undefined,
+        },
+      ]);
+      config = {
+        url: values.url,
+        paramOptions,
+      };
+    }
     await savePlugin({
       ...values,
       id: detail?.id,
@@ -252,6 +294,14 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
                   },
                 ]);
               }
+              if (value === PluginTypeEnum.SUPERSET) {
+                form.setFieldsValue({
+                  enabled: true,
+                  datasourceType: 'table',
+                  timeoutSeconds: 30,
+                  vizType: 'AUTO',
+                });
+              }
             }}
           />
         </FormItem>
@@ -302,7 +352,8 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
             </Button>
           </div>
         </FormItem>
-        {(pluginType === PluginTypeEnum.WEB_PAGE || pluginType === PluginTypeEnum.WEB_SERVICE) && (
+        {(pluginType === PluginTypeEnum.WEB_PAGE ||
+          pluginType === PluginTypeEnum.WEB_SERVICE) && (
           <>
             <FormItem name="url" label="地址" rules={[{ required: true, message: '请输入地址' }]}>
               <Input placeholder="请输入地址" allowClear />
@@ -408,6 +459,64 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
                   新增参数
                 </Button>
               </div>
+            </FormItem>
+          </>
+        )}
+        {pluginType === PluginTypeEnum.SUPERSET && (
+          <>
+            <FormItem
+              name="enabled"
+              label="启用Superset"
+              rules={[{ required: true, message: '请选择是否启用Superset' }]}
+            >
+              <Radio.Group>
+                <Radio value={true}>启用</Radio>
+                <Radio value={false}>停用</Radio>
+              </Radio.Group>
+            </FormItem>
+            <FormItem
+              name="baseUrl"
+              label="Superset地址"
+              rules={[{ required: true, message: '请输入Superset地址' }]}
+            >
+              <Input placeholder="https://superset.example.com" allowClear />
+            </FormItem>
+            <FormItem
+              name="accessToken"
+              label="访问Token"
+              rules={[{ required: true, message: '请输入访问Token' }]}
+            >
+              <Input.Password placeholder="请输入Superset访问Token" allowClear />
+            </FormItem>
+            <FormItem name="timeoutSeconds" label="超时(秒)">
+              <InputNumber placeholder="默认30" min={1} />
+            </FormItem>
+            <FormItem name="datasetId" label="数据集ID">
+              <InputNumber placeholder="已有Superset数据集ID" min={1} />
+            </FormItem>
+            <FormItem name="databaseId" label="数据库ID">
+              <InputNumber placeholder="用于创建虚拟数据集" min={1} />
+            </FormItem>
+            <FormItem name="schema" label="Schema">
+              <Input placeholder="可选" allowClear />
+            </FormItem>
+            <FormItem name="datasourceType" label="数据源类型">
+              <Select
+                placeholder="table"
+                options={[
+                  { label: 'table', value: 'table' },
+                  { label: 'dataset', value: 'dataset' },
+                ]}
+              />
+            </FormItem>
+            <FormItem name="vizType" label="viz_type">
+              <Input placeholder="AUTO 或 Superset 图表类型" allowClear />
+            </FormItem>
+            <FormItem name="embedPath" label="Embed路径">
+              <Input placeholder="/superset/embed/chart/{uuid}/" allowClear />
+            </FormItem>
+            <FormItem name="formData" label="form_data(JSON)">
+              <TextArea placeholder='{"viz_type":"line"}' autoSize={{ minRows: 4, maxRows: 10 }} />
             </FormItem>
           </>
         )}

@@ -3,12 +3,13 @@ import { CheckCircleFilled, InfoCircleOutlined } from '@ant-design/icons';
 import { PREFIX_CLS, MsgContentTypeEnum } from '../../common/constants';
 import { MsgDataType } from '../../common/type';
 import ChatMsg from '../ChatMsg';
+import SupersetChart from '../ChatMsg/SupersetChart';
 import WebPage from '../ChatMsg/WebPage';
 import Loading from './Loading';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import React, { ReactNode, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { SupersetChartResponseType } from '../../common/type';
 
 type Props = {
   queryId?: number;
@@ -48,6 +49,12 @@ const ExecuteItem: React.FC<Props> = ({
   const [msgContentType, setMsgContentType] = useState<MsgContentTypeEnum>();
   const [showErrMsg, setShowErrMsg] = useState<boolean>(false);
   const titlePrefix = queryMode === 'PLAIN_TEXT' || queryMode === 'WEB_SERVICE' ? '问答' : '数据';
+  const supersetResponse = data?.response as SupersetChartResponseType | undefined;
+  const canRenderSuperset =
+    data?.queryMode === 'SUPERSET' &&
+    supersetResponse &&
+    !supersetResponse.fallback &&
+    !!supersetResponse.webPage?.url;
 
   const getNodeTip = (title: ReactNode, tip?: string | ReactNode) => {
     return (
@@ -162,6 +169,8 @@ const ExecuteItem: React.FC<Props> = ({
             executeItemNode
           ) : data?.queryMode === 'PLAIN_TEXT' || data?.queryMode === 'WEB_SERVICE' ? (
             data?.textResult
+          ) : canRenderSuperset ? (
+            <SupersetChart id={queryId ?? data?.queryId ?? data?.id ?? ''} data={data} />
           ) : data?.queryMode === 'WEB_PAGE' ? (
             <WebPage id={queryId!} data={data} />
           ) : (

@@ -82,8 +82,13 @@ const PluginManage = () => {
       dataIndex: 'type',
       key: 'type',
       render: (value: string) => {
+        const colorMap: Record<string, string> = {
+          [PluginTypeEnum.WEB_PAGE]: 'blue',
+          [PluginTypeEnum.WEB_SERVICE]: 'cyan',
+          [PluginTypeEnum.SUPERSET]: 'purple',
+        };
         return (
-          <Tag color={value === PluginTypeEnum.WEB_PAGE ? 'blue' : 'cyan'}>
+          <Tag color={colorMap[value] || 'cyan'}>
             {PLUGIN_TYPE_MAP[value]}
           </Tag>
         );

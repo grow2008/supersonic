@@ -14,7 +14,7 @@ public class ChatPlugin extends RecordInfo {
 
     private Long id;
 
-    /** * plugin type WEB_PAGE WEB_SERVICE */
+    /** * plugin type WEB_PAGE WEB_SERVICE SUPERSET */
     private String type;
 
     private List<Long> dataSetList = Lists.newArrayList();

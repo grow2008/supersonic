@@ -119,6 +119,25 @@ export type PluginResonseType = {
   name: string;
 };
 
+export type SupersetChartResponseType = {
+  name: string;
+  webPage: { url: string; paramOptions: any; params: any; valueParams: any };
+  pluginId: number;
+  pluginType: string;
+  fallback?: boolean;
+  fallbackReason?: string;
+  guestToken?: string;
+  chartId?: number;
+  chartUuid?: string;
+  vizType?: string;
+  dashboards?: SupersetDashboardType[];
+};
+
+export type SupersetDashboardType = {
+  id: number;
+  title: string;
+};
+
 export type MetricInfoType = {
   date: string;
   name: string;
@@ -143,7 +162,7 @@ export type MsgDataType = {
   queryMode: string;
   queryState: string;
   queryText: string;
-  response: PluginResonseType;
+  response: PluginResonseType | SupersetChartResponseType;
   parseInfos?: ChatContextType[];
   queryTimeCost?: number;
   similarQueries: SimilarQuestionType[];

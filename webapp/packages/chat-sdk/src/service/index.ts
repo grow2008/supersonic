@@ -6,6 +6,7 @@ import {
   MsgDataType,
   ParseDataType,
   SearchRecommendItem,
+  SupersetDashboardType,
 } from '../common/type';
 import { isMobile } from '../utils/utils';
 
@@ -98,6 +99,20 @@ export function getExecuteSummary(
   return axios.post<MsgDataType>(`${prefix}/chat/query/getExecuteSummary`, {
     queryId: queryId,
   });
+}
+
+export function fetchSupersetDashboards(pluginId?: number) {
+  return axios.post<SupersetDashboardType[]>(`${prefix}/chat/superset/dashboards`, {
+    pluginId,
+  });
+}
+
+export function pushSupersetChartToDashboard(params: {
+  pluginId?: number;
+  dashboardId: number;
+  chartId: number;
+}) {
+  return axios.post<boolean>(`${prefix}/chat/superset/dashboard/push`, params);
 }
 
 export function switchEntity(entityId: string, modelId?: number, chatId?: number) {

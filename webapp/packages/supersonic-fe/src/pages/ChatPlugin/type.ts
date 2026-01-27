@@ -1,14 +1,27 @@
 export type PluginConfigType = {
-  url: string;
-  params: any;
-  paramOptions: any;
-  valueParams: any;
-  forwardParam: any;
+  url?: string;
+  params?: any;
+  paramOptions?: any;
+  valueParams?: any;
+  forwardParam?: any;
+  enabled?: boolean;
+  baseUrl?: string;
+  accessToken?: string;
+  timeoutSeconds?: number;
+  datasetId?: number;
+  databaseId?: number;
+  schema?: string;
+  datasourceType?: string;
+  vizType?: string;
+  formData?: any;
+  embedPath?: string;
+  height?: number;
 };
 
 export enum PluginTypeEnum {
   WEB_PAGE = 'WEB_PAGE',
   WEB_SERVICE = 'WEB_SERVICE',
+  SUPERSET = 'SUPERSET',
   NL2SQL_LLM = 'NL2SQL_LLM',
 }
 
