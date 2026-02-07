@@ -1,11 +1,13 @@
 package com.tencent.supersonic.chat.server.processor.execute;
 
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginConfig;
+import com.tencent.supersonic.chat.api.pojo.response.QueryResult;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
 import com.tencent.supersonic.headless.api.pojo.SemanticParseInfo;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetColumn;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetInfo;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetMetric;
+import com.tencent.supersonic.common.pojo.QueryColumn;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +26,25 @@ public class SupersetChartProcessorTest {
         datasetInfo.setColumns(Arrays.asList(buildColumn("id", "INT", true, false),
                 buildColumn("name", "STRING", true, false)));
 
-        Map<String, Object> formData = processor.buildFormData(config, null, datasetInfo, "table");
+        Map<String, Object> formData =
+                processor.buildFormData(config, null, null, datasetInfo, "table");
+
+        Assertions.assertEquals("raw", formData.get("query_mode"));
+        Assertions.assertEquals(Arrays.asList("id", "name"), formData.get("all_columns"));
+        Assertions.assertEquals(Arrays.asList("id", "name"), formData.get("columns"));
+    }
+
+    @Test
+    public void testBuildFormDataTableFallsBackToQueryColumns() {
+        SupersetChartProcessor processor = new SupersetChartProcessor();
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetDatasetInfo datasetInfo = new SupersetDatasetInfo();
+        QueryResult queryResult = new QueryResult();
+        queryResult.setQueryColumns(Arrays.asList(new QueryColumn("id", "INT", "id"),
+                new QueryColumn("name", "STRING", "name")));
+
+        Map<String, Object> formData =
+                processor.buildFormData(config, null, queryResult, datasetInfo, "table");
 
         Assertions.assertEquals("raw", formData.get("query_mode"));
         Assertions.assertEquals(Arrays.asList("id", "name"), formData.get("all_columns"));
@@ -45,7 +65,7 @@ public class SupersetChartProcessorTest {
         datasetInfo.setMetrics(Collections.singletonList(buildMetric("amount")));
 
         Map<String, Object> formData =
-                processor.buildFormData(config, parseInfo, datasetInfo, "pie");
+                processor.buildFormData(config, parseInfo, null, datasetInfo, "pie");
 
         Assertions.assertEquals("amount", formData.get("metric"));
         Assertions.assertEquals(Collections.singletonList("category"), formData.get("groupby"));
@@ -65,7 +85,8 @@ public class SupersetChartProcessorTest {
                 buildColumn("ds", "DATE", false, true)));
 
         Map<String, Object> formData =
-                processor.buildFormData(config, parseInfo, datasetInfo, "echarts_timeseries_line");
+                processor.buildFormData(config, parseInfo, null, datasetInfo,
+                        "echarts_timeseries_line");
 
         Object metrics = formData.get("metrics");
         Assertions.assertTrue(metrics instanceof List);
@@ -93,7 +114,7 @@ public class SupersetChartProcessorTest {
         datasetInfo.setMetrics(Collections.singletonList(buildMetric("amount")));
 
         Assertions.assertThrows(IllegalStateException.class,
-                () -> processor.buildFormData(config, parseInfo, datasetInfo, "heatmap_v2"));
+                () -> processor.buildFormData(config, parseInfo, null, datasetInfo, "heatmap_v2"));
     }
 
     private SupersetDatasetColumn buildColumn(String name, String type, boolean groupby,

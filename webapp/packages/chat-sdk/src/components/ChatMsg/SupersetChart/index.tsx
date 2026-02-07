@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Dropdown, Segmented, message } from 'antd';
 import { embedDashboard } from '@superset-ui/embedded-sdk';
+import type { EmbeddedDashboard, ThemeMode } from '@superset-ui/embedded-sdk';
 import {
   MsgDataType,
   SupersetChartResponseType,
@@ -23,11 +24,7 @@ const DEFAULT_HEIGHT = 800;
 const SUPERSET_SINGLE_CHART_PREFIX = 'supersonic_';
 const SUPERSET_IFRAME_TITLE = 'supersetIframe';
 
-type EmbedInstance = {
-  unmount: () => void;
-  getScrollSize?: () => Promise<{ height?: number; width?: number }>;
-  setThemeMode?: (mode: 'light' | 'dark') => void | Promise<void>;
-};
+type EmbedInstance = EmbeddedDashboard;
 
 export const filterTemporaryDashboards = (
   dashboardList: SupersetDashboardType[],
@@ -86,7 +83,6 @@ const SupersetChart: React.FC<Props> = ({ id, data, triggerResize }) => {
     const index = Math.min(candidateIndex, vizTypeCandidates.length - 1);
     return vizTypeCandidates[index];
   }, [candidateIndex, vizTypeCandidates]);
-  const guestToken = activeCandidate ? activeCandidate.guestToken : response?.guestToken;
   const resolveGuestToken = (payload: any) => {
     if (!payload) {
       return '';
@@ -130,6 +126,7 @@ const SupersetChart: React.FC<Props> = ({ id, data, triggerResize }) => {
     }
     return exp - Date.now() < 60000;
   };
+  const guestToken = activeCandidate ? activeCandidate.guestToken : response?.guestToken;
 
   const buildParamValue = (value: any) => {
     if (value === null || value === undefined) {
@@ -201,30 +198,32 @@ const SupersetChart: React.FC<Props> = ({ id, data, triggerResize }) => {
     setHeight(minHeight);
   }, [minHeight]);
 
-  const resolveThemeMode = useCallback((): 'light' | 'dark' => {
+  const resolveThemeMode = useCallback((): ThemeMode => {
     if (typeof document === 'undefined') {
-      return 'light';
+      return 'light' as ThemeMode;
     }
     const docElement = document.documentElement;
     const themeAttr = docElement.getAttribute('data-theme') || docElement.dataset.theme || '';
     const normalized = themeAttr.toLowerCase();
     if (normalized.includes('dark')) {
-      return 'dark';
+      return 'dark' as ThemeMode;
     }
     if (normalized.includes('light')) {
-      return 'light';
+      return 'light' as ThemeMode;
     }
     const bodyClass = document.body?.className || '';
     if (bodyClass.includes('dark')) {
-      return 'dark';
+      return 'dark' as ThemeMode;
     }
     if (bodyClass.includes('light')) {
-      return 'light';
+      return 'light' as ThemeMode;
     }
     if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return (window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light') as ThemeMode;
     }
-    return 'light';
+    return 'light' as ThemeMode;
   }, []);
 
   const resolveBackgroundColor = useCallback(() => {
@@ -341,8 +340,9 @@ const SupersetChart: React.FC<Props> = ({ id, data, triggerResize }) => {
       });
       const token = resolveGuestToken(responseToken);
       if (!token) {
-        const code = responseToken?.code;
-        const msg = responseToken?.msg;
+        const payload = (responseToken as any)?.data ?? responseToken;
+        const code = payload?.code;
+        const msg = payload?.msg;
         const details = [code ? `code=${code}` : null, msg ? `msg=${msg}` : null]
           .filter(Boolean)
           .join(', ');

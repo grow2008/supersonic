@@ -27,3 +27,6 @@ helloagents/
 helloagents/CHANGELOG.md
 
 **/.tmp*
+
+*.class
+bin/

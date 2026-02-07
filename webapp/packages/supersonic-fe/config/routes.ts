@@ -206,6 +206,13 @@ const ROUTES = [
     envEnableList: [ENV_KEY.SEMANTIC],
   },
   {
+    path: '/supersetDataset',
+    name: 'supersetDataset',
+    component: './SupersetDataset',
+    envEnableList: [ENV_KEY.SEMANTIC],
+    access: ROUTE_AUTH_CODES.SYSTEM_ADMIN,
+  },
+  {
     path: '/llm',
     name: 'llm',
     component: './SemanticModel/components/LLM/LlmTable',

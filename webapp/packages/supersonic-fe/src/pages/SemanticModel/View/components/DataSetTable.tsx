@@ -9,7 +9,6 @@ import {
   updateView,
   getDataSetList,
   getAllModelByDomainId,
-  syncSupersetDatasets,
 } from '../../service';
 import ViewCreateFormModal from './ViewCreateFormModal';
 import moment from 'moment';
@@ -35,7 +34,6 @@ const DataSetTable: React.FC<Props> = ({ disabledEdit = false }) => {
   const [createDataSourceModalOpen, setCreateDataSourceModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [modelList, setModelList] = useState<ISemantic.IModelItem[]>([]);
-  const [syncing, setSyncing] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [editFormStep, setEditFormStep] = useState<number>(0);
 
@@ -237,22 +235,6 @@ const DataSetTable: React.FC<Props> = ({ disabledEdit = false }) => {
           disabledEdit
             ? [<></>]
             : [
-                <Button
-                  key="syncSuperset"
-                  loading={syncing}
-                  onClick={async () => {
-                    setSyncing(true);
-                    const { code, msg } = await syncSupersetDatasets();
-                    setSyncing(false);
-                    if (code === 200) {
-                      message.success('已触发 Superset 同步');
-                    } else {
-                      message.error(msg);
-                    }
-                  }}
-                >
-                  同步到 Superset
-                </Button>,
                 <UploadFile
                   key="uploadFile"
                   domainId={selectDomainId}

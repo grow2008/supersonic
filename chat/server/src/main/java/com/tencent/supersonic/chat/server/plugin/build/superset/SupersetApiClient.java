@@ -23,7 +23,6 @@ import java.util.Objects;
 @Slf4j
 public class SupersetApiClient {
 
-    private static final String DATASET_API = "/api/v1/dataset/";
     private static final String CHART_API = "/api/v1/chart/";
     private static final String GUEST_TOKEN_API = "/api/v1/security/guest_token/";
     private static final String DASHBOARD_API = "/api/v1/dashboard/";
@@ -67,13 +66,14 @@ public class SupersetApiClient {
                 "superset createEmbeddedChart start, datasetId={}, databaseId={}, schema={}, vizType={}, chartName={}",
                 datasetId, databaseId, schema, vizType, chartName);
         if (datasetId == null) {
-            datasetId = createDataset(sql, databaseId, schema);
-            log.debug("superset dataset created, datasetId={}", datasetId);
+            throw new IllegalStateException("superset datasetId is required");
         }
         Long chartId = createChart(datasetId, vizType, formData, chartName);
         String chartUuid = fetchChartUuid(chartId);
         Long dashboardId = createDashboard(chartName);
         addChartToDashboard(dashboardId, chartId);
+        ensureDashboardChartLinked(dashboardId, chartId);
+        updateChartParams(chartId, dashboardId, formData);
         addTagsToDashboard(dashboardId, dashboardTags);
         String embeddedUuid = ensureEmbeddedDashboardUuid(dashboardId);
         String guestToken = createGuestToken("dashboard", embeddedUuid);
@@ -122,6 +122,10 @@ public class SupersetApiClient {
     }
 
     public String createEmbeddedGuestToken(String embeddedUuid) {
+        String dashboardId = resolveEmbeddedDashboardId(embeddedUuid);
+        if (StringUtils.isNotBlank(dashboardId)) {
+            return createGuestToken("dashboard", dashboardId);
+        }
         return createGuestToken("dashboard", embeddedUuid);
     }
 
@@ -132,6 +136,69 @@ public class SupersetApiClient {
         Map<String, Object> payload = new HashMap<>();
         payload.put("dashboards", Collections.singletonList(dashboardId));
         put(CHART_API + chartId, payload);
+    }
+
+    private void updateChartParams(Long chartId, Long dashboardId, Map<String, Object> formData) {
+        if (chartId == null) {
+            return;
+        }
+        Map<String, Object> merged =
+                formData == null ? new HashMap<>() : new HashMap<>(formData);
+        if (dashboardId != null) {
+            merged.putIfAbsent("dashboardId", dashboardId);
+        }
+        merged.putIfAbsent("slice_id", chartId);
+        merged.putIfAbsent("chart_id", chartId);
+        merged.putIfAbsent("force", false);
+        merged.putIfAbsent("result_format", "json");
+        merged.putIfAbsent("result_type", "full");
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("params", JsonUtil.toString(merged));
+        try {
+            put(CHART_API + chartId, payload);
+        } catch (HttpStatusCodeException ex) {
+            log.warn("superset chart params update failed, chartId={}", chartId, ex);
+        }
+    }
+
+    private void ensureDashboardChartLinked(Long dashboardId, Long chartId) {
+        if (dashboardId == null || chartId == null) {
+            return;
+        }
+        int attempts = 3;
+        for (int i = 0; i < attempts; i++) {
+            if (isChartLinkedToDashboard(dashboardId, chartId)) {
+                return;
+            }
+            try {
+                Thread.sleep(200L);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+        log.warn("superset dashboard chart link not ready, dashboardId={}, chartId={}",
+                dashboardId, chartId);
+    }
+
+    private boolean isChartLinkedToDashboard(Long dashboardId, Long chartId) {
+        try {
+            Map<String, Object> response = get(DASHBOARD_API + dashboardId + "/charts");
+            List<Map<String, Object>> result = resolveResultList(response);
+            if (result == null) {
+                return false;
+            }
+            for (Map<String, Object> item : result) {
+                Long id = parseLong(resolveValue(item, "id"));
+                if (Objects.equals(id, chartId)) {
+                    return true;
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("superset dashboard chart fetch failed, dashboardId={}, chartId={}",
+                    dashboardId, chartId, ex);
+        }
+        return false;
     }
 
     public void addTagsToDashboard(Long dashboardId, List<String> tags) {
@@ -162,29 +229,6 @@ public class SupersetApiClient {
         Map<String, Object> payload = new HashMap<>();
         payload.put("properties", properties);
         return payload;
-    }
-
-    private Long createDataset(String sql, Long databaseId, String schema) {
-        if (databaseId == null) {
-            throw new IllegalStateException("superset databaseId is required");
-        }
-        String datasetName = "supersonic_dataset_" + System.currentTimeMillis();
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("database", databaseId);
-        payload.put("schema", schema);
-        payload.put("table_name", StringUtils.defaultIfBlank(datasetName, "supersonic_dataset"));
-        payload.put("sql", sql);
-        payload.put("template_params", "{}");
-        Map<String, Object> response = post(DATASET_API, payload);
-        Long datasetId = parseLong(resolveValue(response, "id"));
-        if (datasetId == null) {
-            Map<String, Object> result = resolveMap(response, "result");
-            datasetId = parseLong(resolveValue(result, "id"));
-        }
-        if (datasetId == null) {
-            throw new IllegalStateException("superset dataset create failed");
-        }
-        return datasetId;
     }
 
     private Long createChart(Long datasetId, String vizType, Map<String, Object> formData,
@@ -301,12 +345,31 @@ public class SupersetApiClient {
         return uuid;
     }
 
+
     private String ensureEmbeddedDashboardUuid(Long dashboardId) {
         String embeddedUuid = fetchEmbeddedDashboardUuid(dashboardId);
         if (StringUtils.isNotBlank(embeddedUuid)) {
             return embeddedUuid;
         }
         return createEmbeddedDashboardConfig(dashboardId);
+    }
+
+    private String resolveEmbeddedDashboardId(String embeddedUuid) {
+        if (StringUtils.isBlank(embeddedUuid)) {
+            return null;
+        }
+        try {
+            Map<String, Object> response = get("/api/v1/embedded_dashboard/" + embeddedUuid);
+            String dashboardId = resolveString(response, "dashboard_id");
+            if (StringUtils.isBlank(dashboardId)) {
+                Map<String, Object> result = resolveMap(response, "result");
+                dashboardId = resolveString(result, "dashboard_id");
+            }
+            return dashboardId;
+        } catch (HttpStatusCodeException ex) {
+            log.warn("superset embedded dashboard fetch failed, embeddedId={}", embeddedUuid, ex);
+            return null;
+        }
     }
 
     private String fetchEmbeddedDashboardUuid(Long dashboardId) {
@@ -698,6 +761,20 @@ public class SupersetApiClient {
             return (List<Map<String, Object>>) value;
         }
         return null;
+    }
+
+    private List<Map<String, Object>> resolveResultList(Map<String, Object> response) {
+        if (response == null) {
+            return null;
+        }
+        List<Map<String, Object>> result = resolveList(response, "result");
+        if (result == null) {
+            Map<String, Object> wrapper = resolveMap(response, "result");
+            if (wrapper != null) {
+                result = resolveList(wrapper, "result");
+            }
+        }
+        return result;
     }
 
     private String resolveString(Map<String, Object> map, String key) {

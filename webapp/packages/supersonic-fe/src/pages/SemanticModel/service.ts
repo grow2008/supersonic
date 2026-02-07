@@ -648,6 +648,26 @@ export function syncSupersetDatasets(): Promise<any> {
   });
 }
 
+export function querySupersetDatasets(data: any): Promise<any> {
+  return request(`${process.env.API_BASE_URL}superset/datasets/query`, {
+    method: 'POST',
+    data,
+  });
+}
+
+export function deleteSupersetDataset(id: number): Promise<any> {
+  return request(`${process.env.API_BASE_URL}superset/datasets/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function batchDeleteSupersetDataset(ids: number[]): Promise<any> {
+  return request(`${process.env.API_BASE_URL}superset/datasets/deleteBatch`, {
+    method: 'POST',
+    data: { ids },
+  });
+}
+
 export function getDataSetDetail(id: number): Promise<any> {
   return request(`${process.env.API_BASE_URL}dataSet/${id}`, {
     method: 'GET',

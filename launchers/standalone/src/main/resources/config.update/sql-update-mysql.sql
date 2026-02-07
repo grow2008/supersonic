@@ -421,3 +421,30 @@ ALTER TABLE s2_database add column is_open tinyint DEFAULT NULL COMMENT '是否�
 
 --20250321
 ALTER TABLE s2_user add column last_login datetime DEFAULT NULL;
+
+
+--20260205
+CREATE TABLE IF NOT EXISTS `s2_superset_dataset` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `sql_hash` varchar(64) NOT NULL,
+    `sql_text` longtext DEFAULT NULL,
+    `normalized_sql` longtext DEFAULT NULL,
+    `dataset_name` varchar(255) DEFAULT NULL,
+    `dataset_desc` text DEFAULT NULL,
+    `tags` text DEFAULT NULL,
+    `dataset_type` varchar(20) DEFAULT NULL,
+    `data_set_id` BIGINT DEFAULT NULL,
+    `database_id` BIGINT DEFAULT NULL,
+    `schema_name` varchar(255) DEFAULT NULL,
+    `table_name` varchar(255) DEFAULT NULL,
+    `main_dttm_col` varchar(255) DEFAULT NULL,
+    `superset_dataset_id` BIGINT DEFAULT NULL,
+    `columns` longtext DEFAULT NULL,
+    `metrics` longtext DEFAULT NULL,
+    `created_at` datetime DEFAULT NULL,
+    `created_by` varchar(100) DEFAULT NULL,
+    `updated_at` datetime DEFAULT NULL,
+    `updated_by` varchar(100) DEFAULT NULL,
+    `synced_at` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

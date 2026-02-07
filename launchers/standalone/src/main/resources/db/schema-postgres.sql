@@ -304,6 +304,30 @@ CREATE TABLE IF NOT EXISTS s2_data_set (
     admin_org varchar(3000) DEFAULT NULL
 );
 
+CREATE TABLE IF NOT EXISTS s2_superset_dataset (
+    id BIGSERIAL PRIMARY KEY,
+    sql_hash varchar(64) NOT NULL,
+    sql_text text DEFAULT NULL,
+    normalized_sql text DEFAULT NULL,
+    dataset_name varchar(255) DEFAULT NULL,
+    dataset_desc text DEFAULT NULL,
+    tags text DEFAULT NULL,
+    dataset_type varchar(20) DEFAULT NULL,
+    data_set_id bigint DEFAULT NULL,
+    database_id bigint DEFAULT NULL,
+    schema_name varchar(255) DEFAULT NULL,
+    table_name varchar(255) DEFAULT NULL,
+    main_dttm_col varchar(255) DEFAULT NULL,
+    superset_dataset_id bigint DEFAULT NULL,
+    columns text DEFAULT NULL,
+    metrics text DEFAULT NULL,
+    created_at timestamp DEFAULT NULL,
+    created_by varchar(100) DEFAULT NULL,
+    updated_at timestamp DEFAULT NULL,
+    updated_by varchar(100) DEFAULT NULL,
+    synced_at timestamp DEFAULT NULL
+);
+
 CREATE TABLE IF NOT EXISTS s2_tag (
     id SERIAL PRIMARY KEY,
     item_id INTEGER NOT NULL,

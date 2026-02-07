@@ -7,7 +7,6 @@ import com.google.common.collect.Lists;
 import com.tencent.supersonic.common.jsqlparser.SqlSelectHelper;
 import com.tencent.supersonic.common.pojo.User;
 import com.tencent.supersonic.common.pojo.enums.AuthType;
-import com.tencent.supersonic.common.pojo.enums.EventType;
 import com.tencent.supersonic.common.pojo.enums.QueryType;
 import com.tencent.supersonic.common.pojo.enums.StatusEnum;
 import com.tencent.supersonic.common.pojo.enums.TypeEnums;
@@ -24,14 +23,11 @@ import com.tencent.supersonic.headless.api.pojo.response.MetricResp;
 import com.tencent.supersonic.headless.server.persistence.dataobject.DataSetDO;
 import com.tencent.supersonic.headless.server.persistence.mapper.DataSetDOMapper;
 import com.tencent.supersonic.headless.server.service.*;
-import com.tencent.supersonic.headless.server.sync.superset.SupersetSyncEvent;
-import com.tencent.supersonic.headless.server.sync.superset.SupersetSyncType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -56,9 +52,6 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetDOMapper, DataSetDO>
     @Autowired
     private MetricService metricService;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-
     @Override
     public DataSetResp save(DataSetReq dataSetReq, User user) {
         dataSetReq.createdBy(user.getName());
@@ -68,7 +61,6 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetDOMapper, DataSetDO>
         DataSetResp dataSetResp = convert(dataSetDO);
         save(dataSetDO);
         dataSetResp.setId(dataSetDO.getId());
-        publishSupersetEvent(dataSetResp.getId(), EventType.ADD);
         return dataSetResp;
     }
 
@@ -79,7 +71,6 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetDOMapper, DataSetDO>
         DataSetResp dataSetResp = convert(dataSetDO);
         // conflictCheck(dataSetResp);
         updateById(dataSetDO);
-        publishSupersetEvent(dataSetResp.getId(), EventType.UPDATE);
         return dataSetResp;
     }
 
@@ -132,7 +123,6 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetDOMapper, DataSetDO>
         dataSetDO.setUpdatedBy(user.getName());
         dataSetDO.setUpdatedAt(new Date());
         updateById(dataSetDO);
-        publishSupersetEvent(id, EventType.DELETE);
     }
 
     @Override
@@ -281,14 +271,6 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetDOMapper, DataSetDO>
         return list.stream().collect(Collectors.groupingBy(keyExtractor, Collectors.counting()))
                 .entrySet().stream().filter(entry -> entry.getValue() > 1).map(Map.Entry::getKey)
                 .map(Object::toString).collect(Collectors.toList());
-    }
-
-    private void publishSupersetEvent(Long dataSetId, EventType eventType) {
-        if (dataSetId == null) {
-            return;
-        }
-        eventPublisher.publishEvent(new SupersetSyncEvent(this, SupersetSyncType.DATASET, eventType,
-                Collections.singleton(dataSetId)));
     }
 
     public Long getDataSetIdFromSql(String sql, User user) {

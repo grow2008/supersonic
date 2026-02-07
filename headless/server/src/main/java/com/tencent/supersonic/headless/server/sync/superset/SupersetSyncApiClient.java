@@ -30,8 +30,6 @@ public class SupersetSyncApiClient implements SupersetSyncClient {
     private static final String LOGIN_API = "/api/v1/security/login";
     private static final String REFRESH_API = "/api/v1/security/refresh";
     private static final String CSRF_API = "/api/v1/security/csrf_token/";
-    private static final String VERSION_API = "/api/v1/version";
-    private static final String HEALTH_API = "/api/v1/health";
     private static final String AUTH_STRATEGY_API_KEY_FIRST = "API_KEY_FIRST";
 
     private final SupersetSyncProperties properties;
@@ -191,7 +189,10 @@ public class SupersetSyncApiClient implements SupersetSyncClient {
         payload.put("database", datasetInfo.getDatabaseId());
         payload.put("schema", datasetInfo.getSchema());
         payload.put("table_name", datasetInfo.getTableName());
-        payload.put("sql", datasetInfo.getSql());
+        String sql = StringUtils.trimToNull(datasetInfo.getSql());
+        if (StringUtils.isNotBlank(sql)) {
+            payload.put("sql", sql);
+        }
         payload.put("template_params", "{}");
         Map<String, Object> response = post(DATASET_API, payload);
         Long id = parseLong(resolveValue(response, "id"));
@@ -461,11 +462,7 @@ public class SupersetSyncApiClient implements SupersetSyncClient {
     }
 
     private String resolveSupersetVersion() {
-        String version = extractVersion(safeRequest(HttpMethod.GET, VERSION_API, null));
-        if (StringUtils.isBlank(version)) {
-            version = extractVersion(safeRequest(HttpMethod.GET, HEALTH_API, null));
-        }
-        return StringUtils.trimToNull(version);
+        return null;
     }
 
     private Map<String, Object> safeRequest(HttpMethod method, String path, Object body) {
@@ -527,7 +524,10 @@ public class SupersetSyncApiClient implements SupersetSyncClient {
         payload.put("database_id", datasetInfo.getDatabaseId());
         payload.put("schema", datasetInfo.getSchema());
         payload.put("table_name", datasetInfo.getTableName());
-        payload.put("sql", datasetInfo.getSql());
+        String sql = StringUtils.trimToNull(datasetInfo.getSql());
+        if (StringUtils.isNotBlank(sql)) {
+            payload.put("sql", sql);
+        }
         payload.put("template_params", "{}");
         if (StringUtils.isNotBlank(datasetInfo.getMainDttmCol())) {
             payload.put("main_dttm_col", datasetInfo.getMainDttmCol());

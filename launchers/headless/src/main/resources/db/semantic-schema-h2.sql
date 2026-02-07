@@ -230,6 +230,31 @@ CREATE TABLE IF NOT EXISTS `s2_semantic_pasre_info` (
     );
 COMMENT ON TABLE s2_semantic_pasre_info IS 'semantic layer sql parsing information table';
 
+CREATE TABLE IF NOT EXISTS `s2_superset_dataset` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `sql_hash` varchar(64) NOT NULL,
+    `sql_text` LONGVARCHAR DEFAULT NULL,
+    `normalized_sql` LONGVARCHAR DEFAULT NULL,
+    `dataset_name` varchar(255) DEFAULT NULL,
+    `dataset_desc` varchar(1000) DEFAULT NULL,
+    `tags` LONGVARCHAR DEFAULT NULL,
+    `dataset_type` varchar(20) DEFAULT NULL,
+    `data_set_id` BIGINT DEFAULT NULL,
+    `database_id` BIGINT DEFAULT NULL,
+    `schema_name` varchar(255) DEFAULT NULL,
+    `table_name` varchar(255) DEFAULT NULL,
+    `main_dttm_col` varchar(255) DEFAULT NULL,
+    `superset_dataset_id` BIGINT DEFAULT NULL,
+    `columns` LONGVARCHAR DEFAULT NULL,
+    `metrics` LONGVARCHAR DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT NULL,
+    `created_by` varchar(100) DEFAULT NULL,
+    `updated_at` TIMESTAMP DEFAULT NULL,
+    `updated_by` varchar(100) DEFAULT NULL,
+    `synced_at` TIMESTAMP DEFAULT NULL,
+    PRIMARY KEY (`id`)
+);
+
 
 CREATE TABLE IF NOT EXISTS `s2_available_date_info` (
     `id` INT NOT NULL  AUTO_INCREMENT ,

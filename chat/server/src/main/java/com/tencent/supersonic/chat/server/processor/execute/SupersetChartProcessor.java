@@ -17,6 +17,7 @@ import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginCo
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetVizTypeSelector;
 import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
 import com.tencent.supersonic.chat.server.service.PluginService;
+import com.tencent.supersonic.common.pojo.QueryColumn;
 import com.tencent.supersonic.common.util.ContextUtils;
 import com.tencent.supersonic.common.util.JsonUtil;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
@@ -59,9 +60,15 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     @Override
     public void process(ExecuteContext executeContext) {
         QueryResult queryResult = executeContext.getResponse();
+        if (queryResult == null) {
+            log.debug("superset process skipped, queryResult missing, queryId={}",
+                    executeContext.getRequest() == null ? null
+                            : executeContext.getRequest().getQueryId());
+            return;
+        }
         log.debug("superset process start, queryId={}, queryMode={}",
                 executeContext.getRequest().getQueryId(),
-                queryResult == null ? null : queryResult.getQueryMode());
+                queryResult.getQueryMode());
         Optional<ChatPlugin> pluginOptional = resolveSupersetPlugin(executeContext);
         if (!pluginOptional.isPresent()) {
             log.debug("superset plugin not found for queryId={}",
@@ -98,11 +105,11 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             queryResult.setResponse(response);
             return;
         }
-        SupersetDatasetInfo datasetInfo = resolveSupersetDataset(executeContext);
+        SupersetDatasetInfo datasetInfo = resolveSupersetDataset(executeContext, sql);
         Long datasetId = datasetInfo == null ? null : datasetInfo.getId();
         Long databaseId = datasetInfo == null ? null : datasetInfo.getDatabaseId();
         String schema = datasetInfo == null ? null : datasetInfo.getSchema();
-        if (datasetId == null && databaseId == null) {
+        if (datasetId == null) {
             response.setFallback(true);
             response.setFallbackReason("superset dataset unresolved");
             log.debug("superset fallback: dataset unresolved, pluginId={}, dataSetId={}",
@@ -112,15 +119,16 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             queryResult.setResponse(response);
             return;
         }
+        ensureQueryColumns(queryResult, datasetInfo);
         try {
             SupersetApiClient client = new SupersetApiClient(config);
             String chartName = buildChartName(executeContext, plugin);
             log.debug("superset build chart start, pluginId={}, vizType={}, chartName={}",
                     plugin.getId(), vizType, chartName);
             List<String> dashboardTags = buildDashboardTags(executeContext);
-            List<SupersetChartCandidate> chartCandidates =
-                    buildChartCandidates(client, vizTypeCandidates, sql, chartName, config,
-                            queryResult, datasetInfo, datasetId, databaseId, schema, dashboardTags);
+            List<SupersetChartCandidate> chartCandidates = buildChartCandidates(client,
+                    vizTypeCandidates, sql, chartName, config, executeContext, queryResult,
+                    datasetInfo, datasetId, databaseId, schema, dashboardTags);
             if (!chartCandidates.isEmpty()) {
                 SupersetChartCandidate primary = chartCandidates.get(0);
                 response.setChartId(primary.getChartId());
@@ -207,18 +215,16 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         if (queryResult != null && StringUtils.isNotBlank(queryResult.getQuerySql())) {
             return queryResult.getQuerySql();
         }
-        if (parseInfo != null && parseInfo.getSqlInfo() != null) {
-            return parseInfo.getSqlInfo().getCorrectedS2SQL();
+        if (parseInfo != null && parseInfo.getSqlInfo() != null
+                && StringUtils.isNotBlank(parseInfo.getSqlInfo().getQuerySQL())) {
+            return parseInfo.getSqlInfo().getQuerySQL();
         }
         return null;
     }
 
-    private SupersetDatasetInfo resolveSupersetDataset(ExecuteContext executeContext) {
-        if (executeContext == null || executeContext.getParseInfo() == null) {
-            return null;
-        }
-        Long dataSetId = executeContext.getParseInfo().getDataSetId();
-        if (dataSetId == null) {
+    private SupersetDatasetInfo resolveSupersetDataset(ExecuteContext executeContext, String sql) {
+        if (executeContext == null || executeContext.getParseInfo() == null
+                || StringUtils.isBlank(sql)) {
             return null;
         }
         SupersetSyncService syncService;
@@ -228,16 +234,43 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             log.debug("superset sync service missing", ex);
             return null;
         }
-        SupersetDatasetInfo datasetInfo = syncService.resolveDatasetByDataSetId(dataSetId);
+        SupersetDatasetInfo datasetInfo = syncService.registerAndSyncDataset(
+                executeContext.getParseInfo(), sql,
+                executeContext.getRequest() == null ? null : executeContext.getRequest().getUser());
         if (datasetInfo == null) {
-            log.debug("superset dataset resolve failed, dataSetId={}", dataSetId);
+            log.debug("superset dataset register failed, dataSetId={}",
+                    executeContext.getParseInfo().getDataSetId());
             return null;
         }
-        log.debug(
-                "superset dataset resolved, dataSetId={}, supersetDatasetId={}, databaseId={}, schema={}",
-                dataSetId, datasetInfo.getId(), datasetInfo.getDatabaseId(),
-                datasetInfo.getSchema());
+        log.debug("superset dataset registered, dataSetId={}, supersetDatasetId={}, databaseId={}, schema={}",
+                executeContext.getParseInfo().getDataSetId(), datasetInfo.getId(),
+                datasetInfo.getDatabaseId(), datasetInfo.getSchema());
         return datasetInfo;
+    }
+
+    private void ensureQueryColumns(QueryResult queryResult, SupersetDatasetInfo datasetInfo) {
+        if (queryResult == null || datasetInfo == null
+                || !CollectionUtils.isEmpty(queryResult.getQueryColumns())) {
+            return;
+        }
+        if (queryResult.getQueryResults() == null) {
+            queryResult.setQueryResults(Collections.emptyList());
+        }
+        List<SupersetDatasetColumn> datasetColumns = datasetInfo.getColumns();
+        if (CollectionUtils.isEmpty(datasetColumns)) {
+            return;
+        }
+        List<QueryColumn> queryColumns = new ArrayList<>();
+        for (SupersetDatasetColumn column : datasetColumns) {
+            if (column == null || StringUtils.isBlank(column.getColumnName())) {
+                continue;
+            }
+            queryColumns.add(new QueryColumn(column.getColumnName(), column.getType(),
+                    column.getColumnName()));
+        }
+        if (!queryColumns.isEmpty()) {
+            queryResult.setQueryColumns(queryColumns);
+        }
     }
 
     private List<SupersetVizTypeSelector.VizTypeItem> resolveVizTypeCandidates(
@@ -285,8 +318,9 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
 
     private List<SupersetChartCandidate> buildChartCandidates(SupersetApiClient client,
             List<SupersetVizTypeSelector.VizTypeItem> candidates, String sql, String chartName,
-            SupersetPluginConfig config, QueryResult queryResult, SupersetDatasetInfo datasetInfo,
-            Long datasetId, Long databaseId, String schema, List<String> dashboardTags) {
+            SupersetPluginConfig config, ExecuteContext executeContext, QueryResult queryResult,
+            SupersetDatasetInfo datasetInfo, Long datasetId, Long databaseId, String schema,
+            List<String> dashboardTags) {
         if (client == null || candidates == null || candidates.isEmpty()) {
             return Collections.emptyList();
         }
@@ -302,7 +336,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             String candidateChartName = buildCandidateChartName(chartName, vizType, i);
             try {
                 Map<String, Object> formData =
-                        buildFormData(config, executeContext.getParseInfo(), datasetInfo, vizType);
+                        buildFormData(config, executeContext.getParseInfo(), queryResult,
+                                datasetInfo, vizType);
                 log.debug(
                         "superset chart formData prepared, vizType={}, keys={}, size={}, datasetColumns={}, datasetMetrics={}, parseMetrics={}, parseDimensions={}",
                         vizType, formData.keySet(), formData.size(),
@@ -340,8 +375,9 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         if (results.isEmpty() && !hasTableCandidate) {
             String fallbackVizType = "table";
             try {
-                Map<String, Object> formData = buildFormData(config, executeContext.getParseInfo(),
-                        datasetInfo, fallbackVizType);
+                Map<String, Object> formData =
+                        buildFormData(config, executeContext.getParseInfo(), queryResult,
+                                datasetInfo, fallbackVizType);
                 SupersetChartInfo chartInfo =
                         client.createEmbeddedChart(sql, chartName, fallbackVizType, formData,
                                 resolvedDatasetId, databaseId, schema, dashboardTags);
@@ -371,14 +407,15 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     /**
      * 构建 Superset 图表的 formData，优先合并插件自定义配置。
      *
-     * Args: config: Superset 插件配置。 parseInfo: 语义解析信息。 datasetInfo: Superset dataset 信息。 vizType:
-     * 图表类型。
+     * Args: config: Superset 插件配置。 parseInfo: 语义解析信息。 queryResult: 查询结果。
+     * datasetInfo: Superset dataset 信息。 vizType: 图表类型。
      *
      * Returns: 合并后的 formData。
      */
     Map<String, Object> buildFormData(SupersetPluginConfig config, SemanticParseInfo parseInfo,
-            SupersetDatasetInfo datasetInfo, String vizType) {
-        Map<String, Object> autoFormData = buildAutoFormData(parseInfo, datasetInfo, vizType);
+            QueryResult queryResult, SupersetDatasetInfo datasetInfo, String vizType) {
+        Map<String, Object> autoFormData =
+                buildAutoFormData(parseInfo, queryResult, datasetInfo, vizType);
         Map<String, Object> customFormData = config == null ? null : config.getFormData();
         if (customFormData == null || customFormData.isEmpty()) {
             return autoFormData;
@@ -394,13 +431,14 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     /**
      * 基于 dataset 与解析信息生成 Superset formData，确保由 Superset 计算结果。
      *
-     * Args: parseInfo: 语义解析信息。 datasetInfo: Superset dataset 信息。 vizType: 图表类型。
+     * Args: parseInfo: 语义解析信息。 queryResult: 查询结果。
+     * datasetInfo: Superset dataset 信息。 vizType: 图表类型。
      *
      * Returns: 自动生成的 formData。
      */
     private Map<String, Object> buildAutoFormData(SemanticParseInfo parseInfo,
-            SupersetDatasetInfo datasetInfo, String vizType) {
-        FormDataContext context = buildFormDataContext(parseInfo, datasetInfo);
+            QueryResult queryResult, SupersetDatasetInfo datasetInfo, String vizType) {
+        FormDataContext context = buildFormDataContext(parseInfo, queryResult, datasetInfo);
         FormDataProfile profile = resolveFormDataProfile(vizType);
         switch (profile) {
             case TABLE:
@@ -444,9 +482,12 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     }
 
     private FormDataContext buildFormDataContext(SemanticParseInfo parseInfo,
-            SupersetDatasetInfo datasetInfo) {
+            QueryResult queryResult, SupersetDatasetInfo datasetInfo) {
         List<SupersetDatasetColumn> datasetColumns =
                 datasetInfo == null ? Collections.emptyList() : datasetInfo.getColumns();
+        if (CollectionUtils.isEmpty(datasetColumns)) {
+            datasetColumns = resolveQueryColumns(queryResult);
+        }
         List<String> columnNames = resolveDatasetColumns(datasetColumns);
         Map<String, SupersetDatasetColumn> columnMap = toColumnMap(datasetColumns);
         List<String> dimensionColumns = resolveDimensionColumns(parseInfo, columnMap);
@@ -456,6 +497,27 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         List<String> numericColumns = resolveNumericColumns(datasetColumns);
         return new FormDataContext(datasetColumns, columnNames, dimensionColumns, metrics,
                 timeColumn, timeColumns, numericColumns);
+    }
+
+    private List<SupersetDatasetColumn> resolveQueryColumns(QueryResult queryResult) {
+        if (queryResult == null || CollectionUtils.isEmpty(queryResult.getQueryColumns())) {
+            return Collections.emptyList();
+        }
+        List<SupersetDatasetColumn> columns = new ArrayList<>();
+        for (QueryColumn column : queryResult.getQueryColumns()) {
+            if (column == null || StringUtils.isBlank(column.getName())) {
+                continue;
+            }
+            SupersetDatasetColumn datasetColumn = new SupersetDatasetColumn();
+            datasetColumn.setColumnName(column.getName());
+            datasetColumn.setType(column.getType());
+            datasetColumn.setIsDttm(isTimeType(column.getType()));
+            datasetColumn.setGroupby(true);
+            datasetColumn.setFilterable(true);
+            datasetColumn.setIsActive(true);
+            columns.add(datasetColumn);
+        }
+        return columns;
     }
 
     private FormDataProfile resolveFormDataProfile(String vizType) {
@@ -1065,6 +1127,16 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
                 }
             }
         }
+        if (!columnMap.isEmpty()) {
+            for (SupersetDatasetColumn column : columnMap.values()) {
+                if (column == null || StringUtils.isBlank(column.getColumnName())) {
+                    continue;
+                }
+                if (isTimeType(column.getType())) {
+                    return column.getColumnName();
+                }
+            }
+        }
         if (parseInfo != null && !CollectionUtils.isEmpty(parseInfo.getDimensions())) {
             for (SchemaElement element : parseInfo.getDimensions()) {
                 String name = resolveSchemaElementName(element);
@@ -1135,6 +1207,12 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
                 || normalized.contains("DECIMAL") || normalized.contains("NUMBER")
                 || normalized.contains("NUMERIC") || normalized.contains("BIGINT")
                 || normalized.contains("SHORT");
+    }
+
+    private boolean isTimeType(String type) {
+        String normalized = StringUtils.defaultString(type).toUpperCase();
+        return normalized.contains("DATE") || normalized.contains("TIME")
+                || normalized.contains("TIMESTAMP");
     }
 
     /**

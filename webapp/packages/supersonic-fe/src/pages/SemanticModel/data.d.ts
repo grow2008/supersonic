@@ -182,6 +182,26 @@ export declare namespace ISemantic {
     };
   }
 
+  interface ISupersetDatasetItem {
+    id: number;
+    sqlHash: string;
+    datasetName: string;
+    datasetDesc: string;
+    tags: string;
+    datasetType: string;
+    dataSetId: number;
+    databaseId: number;
+    schemaName: string;
+    tableName: string;
+    mainDttmCol: string;
+    supersetDatasetId: number;
+    createdAt: string;
+    createdBy: string;
+    updatedAt: string;
+    updatedBy: string;
+    syncedAt: string;
+  }
+
   interface IDimensionItem {
     createdBy: string;
     updatedBy: string;
