@@ -5,7 +5,6 @@ import com.tencent.supersonic.chat.api.pojo.response.QueryResult;
 import com.tencent.supersonic.chat.server.pojo.ChatContext;
 import com.tencent.supersonic.chat.server.pojo.ChatMemory;
 import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
-import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginResolver;
 import com.tencent.supersonic.chat.server.service.ChatContextService;
 import com.tencent.supersonic.chat.server.service.MemoryService;
 import com.tencent.supersonic.chat.server.util.ResultFormatter;
@@ -101,6 +100,7 @@ public class SqlExecutor implements ChatQueryExecutor {
                 : parseInfo.getSqlInfo().getCorrectedS2SQL();
 
         QuerySqlReq sqlReq = QuerySqlReq.builder().sql(finalSql).build();
+
         sqlReq.setSqlInfo(parseInfo.getSqlInfo());
         sqlReq.setDataSetId(parseInfo.getDataSetId());
 
@@ -138,13 +138,7 @@ public class SqlExecutor implements ChatQueryExecutor {
      */
     private boolean shouldSkipSqlExecution(ExecuteContext executeContext,
             SemanticParseInfo parseInfo) {
-        if (executeContext == null || parseInfo == null) {
-            return false;
-        }
-        if (!LLMSqlQuery.QUERY_MODE.equalsIgnoreCase(parseInfo.getQueryMode())) {
-            return false;
-        }
-        return SupersetPluginResolver.isSupersetEnabled(executeContext);
+        return false;
     }
 
     /**

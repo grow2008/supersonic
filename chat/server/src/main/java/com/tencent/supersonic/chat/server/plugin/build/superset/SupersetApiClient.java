@@ -35,6 +35,7 @@ public class SupersetApiClient {
 
     private static final String AUTH_STRATEGY_JWT_FIRST = "JWT_FIRST";
     private static final String AUTH_STRATEGY_API_KEY_FIRST = "API_KEY_FIRST";
+    private static volatile SupersetVizTypeSelector.VizTypeCatalog VIZTYPE_CATALOG;
 
     private final SupersetPluginConfig config;
     private final RestTemplate restTemplate;
@@ -46,6 +47,21 @@ public class SupersetApiClient {
         private String refreshToken;
         private String csrfToken;
         private String cookie;
+    }
+
+    private static class ChartTemplateSnapshot {
+        private final Long chartId;
+        private final String vizType;
+        private final Map<String, Object> formData;
+        private final Map<String, Object> queryContext;
+
+        private ChartTemplateSnapshot(Long chartId, String vizType, Map<String, Object> formData,
+                Map<String, Object> queryContext) {
+            this.chartId = chartId;
+            this.vizType = vizType;
+            this.formData = formData;
+            this.queryContext = queryContext;
+        }
     }
 
     public SupersetApiClient(SupersetPluginConfig config) {
@@ -69,12 +85,14 @@ public class SupersetApiClient {
         if (datasetId == null) {
             throw new IllegalStateException("superset datasetId is required");
         }
-        Long chartId = createChart(datasetId, vizType, formData, chartName);
+        ChartTemplateSnapshot template = resolveTemplateChartSnapshot(vizType);
+        Map<String, Object> mergedFormData = mergeTemplateFormData(formData, template);
+        Long chartId = createChart(datasetId, vizType, mergedFormData, chartName);
         String chartUuid = fetchChartUuid(chartId);
         Long dashboardId = createDashboard(chartName);
         addChartToDashboard(dashboardId, chartId);
         ensureDashboardChartLinked(dashboardId, chartId);
-        updateChartParams(chartId, dashboardId, formData, vizType, datasetId);
+        updateChartParams(chartId, dashboardId, mergedFormData, vizType, datasetId, template);
         addTagsToDashboard(dashboardId, dashboardTags);
         String embeddedUuid = ensureEmbeddedDashboardUuid(dashboardId);
         String guestToken = createGuestToken("dashboard", embeddedUuid);
@@ -92,14 +110,29 @@ public class SupersetApiClient {
     }
 
     public List<SupersetDashboardInfo> listDashboards() {
-        Map<String, Object> response = get(DASHBOARD_API + "?q=(page:0,page_size:200)");
+        return listDashboardsInternal(null);
+    }
+
+    public List<SupersetDashboardInfo> listDashboards(String accessToken) {
+        if (StringUtils.isBlank(accessToken)) {
+            throw new IllegalArgumentException("superset access token required");
+        }
+        return listDashboardsInternal(accessToken);
+    }
+
+    private List<SupersetDashboardInfo> listDashboardsInternal(String accessToken) {
+        Map<String, Object> response = StringUtils.isBlank(accessToken)
+                ? get(DASHBOARD_API + "?q=(page:0,page_size:200)")
+                : getWithAccessToken(DASHBOARD_API + "?q=(page:0,page_size:200)", accessToken);
         List<SupersetDashboardInfo> dashboards = extractDashboards(response);
         for (SupersetDashboardInfo dashboard : dashboards) {
             if (dashboard == null || dashboard.getId() == null) {
                 continue;
             }
             try {
-                String embeddedId = fetchEmbeddedDashboardUuid(dashboard.getId());
+                String embeddedId = StringUtils.isBlank(accessToken)
+                        ? fetchEmbeddedDashboardUuid(dashboard.getId())
+                        : fetchEmbeddedDashboardUuid(dashboard.getId(), accessToken);
                 if (StringUtils.isNotBlank(embeddedId)) {
                     dashboard.setEmbeddedId(embeddedId);
                 }
@@ -140,13 +173,18 @@ public class SupersetApiClient {
     }
 
     private void updateChartParams(Long chartId, Long dashboardId, Map<String, Object> formData,
-            String vizType, Long datasetId) {
+            String vizType, Long datasetId, ChartTemplateSnapshot template) {
         if (chartId == null) {
             return;
         }
-        Map<String, Object> merged = resolveChartParams(chartId);
-        if (merged == null) {
-            merged = new HashMap<>();
+        Map<String, Object> merged = new HashMap<>();
+        if (template != null && template.formData != null) {
+            merged.putAll(template.formData);
+        } else {
+            Map<String, Object> existing = resolveChartParams(chartId);
+            if (existing != null) {
+                merged.putAll(existing);
+            }
         }
         if (formData != null && !formData.isEmpty()) {
             merged.putAll(formData);
@@ -173,113 +211,369 @@ public class SupersetApiClient {
         resolvedUrlParams.put("show_filters", "false");
         resolvedUrlParams.put("expand_filters", "false");
         merged.put("url_params", resolvedUrlParams);
+        normalizeAccessFields(merged);
         Map<String, Object> payload = new HashMap<>();
         payload.put("params", JsonUtil.toString(merged));
-        Map<String, Object> queryContext = buildQueryContext(merged, datasetId, vizType);
+        Map<String, Object> templateContext = template == null ? null : template.queryContext;
+        Map<String, Object> queryContext =
+                buildQueryContext(merged, datasetId, vizType, templateContext);
         if (queryContext != null) {
             payload.put("query_context", JsonUtil.toString(queryContext));
             payload.put("query_context_generation", true);
         }
         try {
-            log.debug("superset chart params update payload, chartId={}, payload={}", chartId,
-                    JsonUtil.toString(payload));
+            log.debug("superset chart params update payload, chartId={}, templateId={}, payload={}",
+                    chartId, template == null ? null : template.chartId, JsonUtil.toString(payload));
             put(CHART_API + chartId, payload);
         } catch (HttpStatusCodeException ex) {
             log.warn("superset chart params update failed, chartId={}", chartId, ex);
         }
     }
 
-    private Map<String, Object> buildQueryContext(Map<String, Object> formData, Long datasetId,
+    Map<String, Object> buildQueryContext(Map<String, Object> formData, Long datasetId,
             String vizType) {
+        return buildQueryContext(formData, datasetId, vizType, null);
+    }
+
+    private Map<String, Object> buildQueryContext(Map<String, Object> formData, Long datasetId,
+            String vizType, Map<String, Object> templateContext) {
         if (formData == null || datasetId == null) {
             return null;
         }
-        if (StringUtils.isBlank(vizType) || !vizType.toLowerCase().contains("table")) {
-            return null;
+        Map<String, Object> context =
+                templateContext == null ? new HashMap<>() : deepCopyMap(templateContext);
+        Map<String, Object> datasource = new HashMap<>();
+        datasource.put("id", datasetId);
+        datasource.put("type", getDatasourceType());
+        context.put("datasource", datasource);
+        context.put("force", false);
+        context.put("result_format", "json");
+        context.put("result_type", "full");
+        context.put("form_data", formData);
+        List<Map<String, Object>> queries = resolveQueries(context.get("queries"));
+        if (queries.isEmpty()) {
+            queries.add(new HashMap<>());
         }
-        Map<String, Object> query = new HashMap<>();
+        for (Map<String, Object> query : queries) {
+            syncQueryObject(query, formData);
+        }
+        List<Map<String, Object>> templated =
+                SupersetQueryContextTemplates.apply(vizType, formData, queries);
+        if (templated == null || templated.isEmpty()) {
+            templated = queries;
+        }
+        context.put("queries", templated);
+        return context;
+    }
+
+    private void syncQueryObject(Map<String, Object> query, Map<String, Object> formData) {
+        if (query == null || formData == null) {
+            return;
+        }
         Object queryMode = formData.get("query_mode");
         String mode = queryMode == null ? "aggregate" : String.valueOf(queryMode);
-        List<Object> metrics = toList(formData.get("metrics"));
+        List<Object> metrics = resolveMetricsForAccess(formData);
         List<Object> groupby = toList(formData.get("groupby"));
         List<Object> columns = toList(formData.get("columns"));
+        if (!groupby.isEmpty()) {
+            columns = mergeList(columns, groupby);
+        }
         if ("raw".equalsIgnoreCase(mode)) {
-            query.put("columns", columns);
+            List<Object> rawColumns = columns;
+            if (rawColumns.isEmpty()) {
+                rawColumns = toList(formData.get("all_columns"));
+            }
+            if (!rawColumns.isEmpty()) {
+                query.put("columns", rawColumns);
+            }
         } else {
             query.put("metrics", metrics);
             if (!groupby.isEmpty()) {
-                query.put("columns", groupby);
+                query.put("groupby", groupby);
+            }
+            if (!columns.isEmpty()) {
+                query.put("columns", columns);
             }
             Object granularity = formData.get("granularity_sqla");
             if (granularity != null) {
                 query.put("granularity", granularity);
             }
-            if (!metrics.isEmpty()) {
-                List<Object> orderby = new ArrayList<>();
-                List<Object> order = new ArrayList<>();
-                order.add(metrics.get(0));
-                order.add(false);
-                orderby.add(order);
-                query.put("orderby", orderby);
+        }
+        Object orderby = formData.get("orderby");
+        if (orderby == null) {
+            orderby = resolveDefaultOrderby(metrics);
+        }
+        if (orderby != null) {
+            query.put("orderby", orderby);
+        }
+        query.putIfAbsent("filters", Collections.emptyList());
+        Map<String, Object> extras = resolveMap(query, "extras");
+        if (extras == null || extras.isEmpty()) {
+            extras = new HashMap<>();
+            extras.put("having", "");
+            extras.put("where", "");
+        }
+        query.put("extras", extras);
+        query.putIfAbsent("applied_time_extras", Collections.emptyMap());
+        query.putIfAbsent("annotation_layers", Collections.emptyList());
+        query.putIfAbsent("row_limit", formData.getOrDefault("row_limit", 10000));
+        query.putIfAbsent("series_limit", 0);
+        query.putIfAbsent("group_others_when_limit_reached", false);
+        query.putIfAbsent("order_desc", formData.getOrDefault("order_desc", true));
+        query.putIfAbsent("url_params", formData.getOrDefault("url_params", Collections.emptyMap()));
+        query.putIfAbsent("custom_params", Collections.emptyMap());
+        query.putIfAbsent("custom_form_data", Collections.emptyMap());
+        query.putIfAbsent("post_processing", Collections.emptyList());
+        query.putIfAbsent("time_offsets", Collections.emptyList());
+    }
+
+    private void normalizeAccessFields(Map<String, Object> formData) {
+        if (formData == null) {
+            return;
+        }
+        List<Object> metrics = resolveMetricsForAccess(formData);
+        formData.put("metrics", metrics);
+        List<Object> groupby = toList(formData.get("groupby"));
+        List<Object> columns = toList(formData.get("columns"));
+        if (!groupby.isEmpty()) {
+            formData.put("columns", mergeList(columns, groupby));
+        }
+        Object orderby = formData.get("orderby");
+        if (orderby == null) {
+            orderby = resolveDefaultOrderby(metrics);
+            if (orderby != null) {
+                formData.put("orderby", orderby);
             }
         }
-        query.put("filters", Collections.emptyList());
-        Map<String, Object> extras = new HashMap<>();
-        extras.put("having", "");
-        extras.put("where", "");
-        query.put("extras", extras);
-        query.put("applied_time_extras", Collections.emptyMap());
-        query.put("annotation_layers", Collections.emptyList());
-        query.put("row_limit", formData.getOrDefault("row_limit", 10000));
-        query.put("series_limit", 0);
-        query.put("group_others_when_limit_reached", false);
-        query.put("order_desc", formData.getOrDefault("order_desc", true));
-        query.put("url_params", formData.getOrDefault("url_params", Collections.emptyMap()));
-        query.put("custom_params", Collections.emptyMap());
-        query.put("custom_form_data", Collections.emptyMap());
-        query.put("post_processing", Collections.emptyList());
-        query.put("time_offsets", Collections.emptyList());
+    }
 
-        Map<String, Object> datasource = new HashMap<>();
-        datasource.put("id", datasetId);
-        datasource.put("type", getDatasourceType());
-        Map<String, Object> context = new HashMap<>();
-        context.put("datasource", datasource);
-        context.put("force", false);
-        context.put("queries", Collections.singletonList(query));
-        context.put("result_format", "json");
-        context.put("result_type", "full");
-        context.put("form_data", formData);
-        return context;
+    private List<Object> resolveMetricsForAccess(Map<String, Object> formData) {
+        if (formData == null) {
+            return Collections.emptyList();
+        }
+        List<Object> metrics = new ArrayList<>();
+        metrics.addAll(toList(formData.get("metrics")));
+        metrics.addAll(toList(formData.get("metric")));
+        metrics.addAll(toList(formData.get("metrics_b")));
+        return deduplicateList(metrics);
+    }
+
+    private Object resolveDefaultOrderby(List<Object> metrics) {
+        if (metrics == null || metrics.isEmpty()) {
+            return null;
+        }
+        List<Object> orderby = new ArrayList<>();
+        List<Object> order = new ArrayList<>();
+        order.add(metrics.get(0));
+        order.add(false);
+        orderby.add(order);
+        return orderby;
+    }
+
+    private List<Object> mergeList(List<Object> base, List<Object> addition) {
+        List<Object> merged = new ArrayList<>();
+        if (base != null) {
+            merged.addAll(base);
+        }
+        if (addition != null) {
+            merged.addAll(addition);
+        }
+        return deduplicateList(merged);
+    }
+
+    private List<Object> deduplicateList(List<Object> values) {
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Object> result = new ArrayList<>();
+        for (Object value : values) {
+            if (!result.contains(value)) {
+                result.add(value);
+            }
+        }
+        return result;
     }
 
     private List<Object> toList(Object value) {
         if (value instanceof List) {
             return new ArrayList<>((List<Object>) value);
         }
+        if (value != null) {
+            return Collections.singletonList(value);
+        }
         return Collections.emptyList();
+    }
+
+    private List<Map<String, Object>> resolveQueries(Object value) {
+        if (!(value instanceof List)) {
+            return new ArrayList<>();
+        }
+        List<?> rawList = (List<?>) value;
+        List<Map<String, Object>> queries = new ArrayList<>();
+        for (Object entry : rawList) {
+            if (entry instanceof Map) {
+                queries.add(new HashMap<>((Map<String, Object>) entry));
+            }
+        }
+        return queries;
+    }
+
+    private Map<String, Object> deepCopyMap(Map<String, Object> source) {
+        if (source == null) {
+            return new HashMap<>();
+        }
+        String json = JsonUtil.toString(source);
+        Map<String, Object> copy = JsonUtil.toObject(json, Map.class);
+        return copy == null ? new HashMap<>() : copy;
     }
 
     private Map<String, Object> resolveChartParams(Long chartId) {
         try {
             Map<String, Object> response = get(CHART_API + chartId);
-            Object params = resolveValue(response, "params");
-            if (params == null) {
-                Map<String, Object> result = resolveMap(response, "result");
-                params = resolveValue(result, "params");
-            }
-            if (params instanceof Map) {
-                return new HashMap<>((Map<String, Object>) params);
-            }
-            if (params instanceof String && StringUtils.isNotBlank((String) params)) {
-                Map<String, Object> parsed =
-                        JsonUtil.toObject((String) params, Map.class);
-                return parsed == null ? null : new HashMap<>(parsed);
-            }
+            return resolveChartParams(response);
         } catch (Exception ex) {
             log.debug("superset chart params fetch failed, chartId={}", chartId, ex);
         }
         return null;
+    }
+
+    private Map<String, Object> resolveChartParams(Map<String, Object> response) {
+        Object params = resolveValue(response, "params");
+        if (params == null) {
+            Map<String, Object> result = resolveMap(response, "result");
+            params = resolveValue(result, "params");
+        }
+        return parseJsonMap(params);
+    }
+
+    private Map<String, Object> resolveChartQueryContext(Map<String, Object> response) {
+        Object context = resolveValue(response, "query_context");
+        if (context == null) {
+            Map<String, Object> result = resolveMap(response, "result");
+            context = resolveValue(result, "query_context");
+        }
+        return parseJsonMap(context);
+    }
+
+    private Map<String, Object> parseJsonMap(Object value) {
+        if (value instanceof Map) {
+            return new HashMap<>((Map<String, Object>) value);
+        }
+        if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+            Map<String, Object> parsed =
+                    JsonUtil.toObject((String) value, Map.class);
+            return parsed == null ? null : new HashMap<>(parsed);
+        }
+        return null;
+    }
+
+    private ChartTemplateSnapshot resolveTemplateChartSnapshot(String vizType) {
+        Long templateId = resolveTemplateChartId(vizType);
+        if (templateId == null) {
+            return null;
+        }
+        ChartTemplateSnapshot snapshot = fetchChartSnapshot(templateId);
+        if (snapshot != null) {
+            log.debug("superset template chart resolved, vizType={}, templateId={}, hasParams={}, "
+                            + "hasQueryContext={}",
+                    vizType, templateId, snapshot.formData != null, snapshot.queryContext != null);
+        }
+        return snapshot;
+    }
+
+    private Long resolveTemplateChartId(String vizType) {
+        if (config == null) {
+            return null;
+        }
+        Long templateId = null;
+        Map<String, Long> templateIds = config.getTemplateChartIds();
+        if (templateIds != null && StringUtils.isNotBlank(vizType)) {
+            templateId = lookupTemplateId(templateIds, vizType);
+            if (templateId == null) {
+                SupersetVizTypeSelector.VizTypeCatalog catalog = resolveVizTypeCatalog();
+                if (catalog != null && catalog.getItems() != null) {
+                    for (SupersetVizTypeSelector.VizTypeItem item : catalog.getItems()) {
+                        if (item == null || StringUtils.isBlank(item.getVizType())) {
+                            continue;
+                        }
+                        if (!item.getVizType().equalsIgnoreCase(vizType)) {
+                            continue;
+                        }
+                        templateId = lookupTemplateId(templateIds, item.getVizKey());
+                        if (templateId != null) {
+                            break;
+                        }
+                        templateId = lookupTemplateId(templateIds, item.getName());
+                        if (templateId != null) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (templateId == null) {
+            templateId = config.getTemplateChartId();
+        }
+        return templateId;
+    }
+
+    private Long lookupTemplateId(Map<String, Long> templateIds, String key) {
+        if (templateIds == null || StringUtils.isBlank(key)) {
+            return null;
+        }
+        Long templateId = templateIds.get(key);
+        if (templateId == null) {
+            templateId = templateIds.get(StringUtils.lowerCase(key));
+        }
+        if (templateId == null) {
+            templateId = templateIds.get(StringUtils.upperCase(key));
+        }
+        return templateId;
+    }
+
+    private SupersetVizTypeSelector.VizTypeCatalog resolveVizTypeCatalog() {
+        SupersetVizTypeSelector.VizTypeCatalog cached = VIZTYPE_CATALOG;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (SupersetApiClient.class) {
+            if (VIZTYPE_CATALOG == null) {
+                VIZTYPE_CATALOG = SupersetVizTypeSelector.VizTypeCatalog.load();
+            }
+            return VIZTYPE_CATALOG;
+        }
+    }
+
+    private ChartTemplateSnapshot fetchChartSnapshot(Long chartId) {
+        if (chartId == null) {
+            return null;
+        }
+        try {
+            Map<String, Object> response = get(CHART_API + chartId);
+            String vizType = resolveString(response, "viz_type");
+            if (StringUtils.isBlank(vizType)) {
+                Map<String, Object> result = resolveMap(response, "result");
+                vizType = resolveString(result, "viz_type");
+            }
+            Map<String, Object> params = resolveChartParams(response);
+            Map<String, Object> queryContext = resolveChartQueryContext(response);
+            return new ChartTemplateSnapshot(chartId, vizType, params, queryContext);
+        } catch (Exception ex) {
+            log.warn("superset template chart fetch failed, chartId={}", chartId, ex);
+            return null;
+        }
+    }
+
+    private Map<String, Object> mergeTemplateFormData(Map<String, Object> formData,
+            ChartTemplateSnapshot template) {
+        Map<String, Object> merged = new HashMap<>();
+        if (template != null && template.formData != null) {
+            merged.putAll(template.formData);
+        }
+        if (formData != null && !formData.isEmpty()) {
+            merged.putAll(formData);
+        }
+        return merged;
     }
 
     private void ensureDashboardChartLinked(Long dashboardId, Long chartId) {
@@ -511,6 +805,22 @@ public class SupersetApiClient {
         }
         try {
             Map<String, Object> response = get(DASHBOARD_API + dashboardId + "/embedded");
+            return resolveEmbeddedDashboardUuid(response);
+        } catch (HttpStatusCodeException ex) {
+            if (HttpStatus.NOT_FOUND.equals(ex.getStatusCode())) {
+                return null;
+            }
+            throw ex;
+        }
+    }
+
+    private String fetchEmbeddedDashboardUuid(Long dashboardId, String accessToken) {
+        if (dashboardId == null) {
+            throw new IllegalStateException("superset dashboardId missing");
+        }
+        try {
+            Map<String, Object> response =
+                    getWithAccessToken(DASHBOARD_API + dashboardId + "/embedded", accessToken);
             return resolveEmbeddedDashboardUuid(response);
         } catch (HttpStatusCodeException ex) {
             if (HttpStatus.NOT_FOUND.equals(ex.getStatusCode())) {

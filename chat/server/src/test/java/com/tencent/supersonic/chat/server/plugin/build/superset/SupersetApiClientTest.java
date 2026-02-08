@@ -104,6 +104,183 @@ public class SupersetApiClientTest {
         Assertions.assertTrue(ex.getMessage().contains("access token"));
     }
 
+    @Test
+    public void testListDashboardsWithAccessToken() throws Exception {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        config.setBaseUrl("http://localhost:8088/");
+        SupersetApiClient client = new SupersetApiClient(config);
+        RecordingFactory factory = new RecordingFactory("{\"result\":[]}");
+        replaceRestTemplate(client, new RestTemplate(factory));
+
+        client.listDashboards("token-123");
+
+        Assertions.assertEquals(
+                "http://localhost:8088/api/v1/dashboard/?q=(page:0,page_size:200)",
+                factory.getLastUri().toString());
+        Assertions.assertEquals("Bearer token-123",
+                factory.getLastRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+    }
+
+    @Test
+    public void testBuildQueryContextNormalizesMetricsAndColumns() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("metric", "count");
+        formData.put("groupby", Arrays.asList("city"));
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "table");
+        Assertions.assertNotNull(context);
+        Object datasource = context.get("datasource");
+        Assertions.assertTrue(datasource instanceof Map);
+        Assertions.assertEquals(12L, ((Map<?, ?>) datasource).get("id"));
+        Object queriesValue = context.get("queries");
+        Assertions.assertTrue(queriesValue instanceof List);
+        List<?> queries = (List<?>) queriesValue;
+        Assertions.assertFalse(queries.isEmpty());
+        Object firstQuery = queries.get(0);
+        Assertions.assertTrue(firstQuery instanceof Map);
+        Map<?, ?> query = (Map<?, ?>) firstQuery;
+        Assertions.assertTrue(((List<?>) query.get("metrics")).contains("count"));
+        Assertions.assertTrue(((List<?>) query.get("columns")).contains("city"));
+        Assertions.assertTrue(((List<?>) query.get("groupby")).contains("city"));
+        Assertions.assertNotNull(query.get("orderby"));
+    }
+
+    @Test
+    public void testBuildQueryContextTimeseriesColumns() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("metrics", Arrays.asList("count"));
+        formData.put("groupby", Arrays.asList("city"));
+        formData.put("granularity_sqla", "imp_date");
+
+        Map<String, Object> context =
+                client.buildQueryContext(formData, 12L, "echarts_timeseries_line");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> columns = (List<?>) query.get("columns");
+        Assertions.assertTrue(columns.contains("imp_date"));
+        Assertions.assertTrue(columns.contains("city"));
+        Assertions.assertEquals(Arrays.asList("city"), query.get("series_columns"));
+        Assertions.assertEquals(Boolean.TRUE, query.get("is_timeseries"));
+    }
+
+    @Test
+    public void testBuildQueryContextSankeyGroupby() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("source", "src");
+        formData.put("target", "dst");
+        formData.put("metric", "count");
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "sankey_v2");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> groupby = (List<?>) query.get("groupby");
+        Assertions.assertTrue(groupby.contains("src"));
+        Assertions.assertTrue(groupby.contains("dst"));
+    }
+
+    @Test
+    public void testBuildQueryContextHistogramDropsMetrics() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("column", "age");
+        formData.put("groupby", Arrays.asList("city"));
+        formData.put("metrics", Arrays.asList("count"));
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "histogram_v2");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> columns = (List<?>) query.get("columns");
+        Assertions.assertTrue(columns.contains("age"));
+        Assertions.assertTrue(columns.contains("city"));
+        Object metrics = query.get("metrics");
+        if (metrics instanceof List) {
+            Assertions.assertTrue(((List<?>) metrics).isEmpty());
+        } else {
+            Assertions.assertNull(metrics);
+        }
+    }
+
+    @Test
+    public void testBuildQueryContextMapboxColumns() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("all_columns_x", "lon");
+        formData.put("all_columns_y", "lat");
+        formData.put("groupby", Arrays.asList("city"));
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "mapbox");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> columns = (List<?>) query.get("columns");
+        Assertions.assertTrue(columns.contains("lon"));
+        Assertions.assertTrue(columns.contains("lat"));
+        Assertions.assertTrue(columns.contains("city"));
+    }
+
+    @Test
+    public void testBuildQueryContextParallelCoordinatesMetrics() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("series", Arrays.asList("city"));
+        formData.put("metrics", Arrays.asList("count"));
+        formData.put("secondary_metric", "sum");
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "para");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> metrics = (List<?>) query.get("metrics");
+        Assertions.assertTrue(metrics.contains("count"));
+        Assertions.assertTrue(metrics.contains("sum"));
+        List<?> columns = (List<?>) query.get("columns");
+        Assertions.assertTrue(columns.contains("city"));
+    }
+
+    @Test
+    public void testBuildQueryContextWorldMapSecondaryMetric() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("entity", "country");
+        formData.put("metric", "count");
+        formData.put("secondary_metric", "population");
+        formData.put("sort_by_metric", true);
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "world_map");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> metrics = (List<?>) query.get("metrics");
+        Assertions.assertTrue(metrics.contains("count"));
+        Assertions.assertTrue(metrics.contains("population"));
+        Object orderby = query.get("orderby");
+        Assertions.assertTrue(orderby instanceof List);
+        Assertions.assertEquals(1, ((List<?>) orderby).size());
+    }
+
+    @Test
+    public void testBuildQueryContextPartitionTimeOffsets() {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        SupersetApiClient client = new SupersetApiClient(config);
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("groupby", Arrays.asList("category"));
+        formData.put("metrics", Arrays.asList("count"));
+        formData.put("time_compare", Arrays.asList("1 year"));
+
+        Map<String, Object> context = client.buildQueryContext(formData, 12L, "partition");
+        List<?> queries = (List<?>) context.get("queries");
+        Map<?, ?> query = (Map<?, ?>) queries.get(0);
+        List<?> timeOffsets = (List<?>) query.get("time_offsets");
+        Assertions.assertTrue(timeOffsets.contains("1 year"));
+    }
+
     private void replaceRestTemplate(SupersetApiClient client, RestTemplate restTemplate)
             throws Exception {
         Field field = SupersetApiClient.class.getDeclaredField("restTemplate");

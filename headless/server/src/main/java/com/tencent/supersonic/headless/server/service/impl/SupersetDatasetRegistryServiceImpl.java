@@ -477,7 +477,7 @@ public class SupersetDatasetRegistryServiceImpl
         List<SupersetDatasetColumn> columns = new ArrayList<>();
         if (!CollectionUtils.isEmpty(parseInfo.getDimensions())) {
             for (SchemaElement element : parseInfo.getDimensions()) {
-                String name = resolveSchemaElementName(element);
+                String name = resolveSchemaElementColumnName(element);
                 if (StringUtils.isBlank(name)) {
                     continue;
                 }
@@ -497,7 +497,7 @@ public class SupersetDatasetRegistryServiceImpl
         }
         if (!CollectionUtils.isEmpty(parseInfo.getMetrics())) {
             for (SchemaElement element : parseInfo.getMetrics()) {
-                String name = resolveSchemaElementName(element);
+                String name = resolveSchemaElementColumnName(element);
                 if (StringUtils.isBlank(name)) {
                     continue;
                 }
@@ -521,7 +521,7 @@ public class SupersetDatasetRegistryServiceImpl
         }
         List<SupersetDatasetMetric> metrics = new ArrayList<>();
         for (SchemaElement element : parseInfo.getMetrics()) {
-            String name = resolveSchemaElementName(element);
+            String name = resolveSchemaElementColumnName(element);
             if (StringUtils.isBlank(name)) {
                 continue;
             }
@@ -534,6 +534,16 @@ public class SupersetDatasetRegistryServiceImpl
             metrics.add(metric);
         }
         return metrics;
+    }
+
+    private String resolveSchemaElementColumnName(SchemaElement element) {
+        if (element == null) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(element.getName())) {
+            return element.getName();
+        }
+        return element.getBizName();
     }
 
     private String resolveMainDttmCol(List<SupersetDatasetColumn> columns) {

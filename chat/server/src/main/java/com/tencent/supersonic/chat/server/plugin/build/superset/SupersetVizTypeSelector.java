@@ -204,7 +204,7 @@ public class SupersetVizTypeSelector {
         }
 
         if (dimensionCount >= 1 && metricCount == 1) {
-            if (results != null && results.size() <= 10) {
+            if (results != null && !results.isEmpty() && results.size() <= 10) {
                 return resolveCandidateByName("Pie Chart", candidates)
                         .or(() -> resolveCandidateByName("Partition Chart", candidates))
                         .or(() -> resolveCandidateByName("Bar Chart", candidates));
@@ -1089,6 +1089,7 @@ public class SupersetVizTypeSelector {
             }
             Path fallback = Path.of(VIZTYPE_RESOURCE);
             if (!Files.exists(fallback)) {
+                log.warn("superset viztype resource missing: {}", VIZTYPE_RESOURCE);
                 return null;
             }
             try {

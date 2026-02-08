@@ -67,6 +67,7 @@ public class SupersetSyncService {
                 () -> syncDatasets(datasetRegistryIds, trigger));
     }
 
+
     public void triggerFullSync(SupersetSyncTrigger trigger) {
         SupersetSyncResult dbResult = triggerDatabaseSync(Collections.emptySet(), trigger);
         log.info("superset database sync finished, success={}, message={}, stats={}",
@@ -112,6 +113,7 @@ public class SupersetSyncService {
         mergeDatasetInfoForChart(info, remote);
         return info;
     }
+
 
     private SupersetSyncResult runWithRetry(SupersetSyncType type,
             Supplier<SupersetSyncResult> action) {
@@ -316,10 +318,11 @@ public class SupersetSyncService {
                                             "superset dataset fetch failed after create, skip update, id={}",
                                             createdId);
                                 } else {
-                                    SupersetDatasetInfo merged = mergeDatasetSchema(expected,
-                                            current, properties.getSync().isRebuild());
-                                    syncClient.updateDataset(createdId, merged);
-                                }
+                                SupersetDatasetInfo merged =
+                                        mergeDatasetSchema(expected, current,
+                                                properties.getSync().isRebuild());
+                                syncClient.updateDataset(createdId, merged);
+                            }
                             }
                             stats.incCreated();
                             registryService.updateSyncInfo(dataset.getId(), createdId, new Date());

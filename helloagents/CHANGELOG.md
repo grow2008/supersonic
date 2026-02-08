@@ -9,6 +9,16 @@
 - **[webapp-chat-sdk]**: Superset 嵌入支持候选图表切换与按候选推送
   - 方案: [202602040217_superset-viztype-candidates](archive/2026-02/202602040217_superset-viztype-candidates/)
   - 决策: superset-viztype-candidates#D001(前端提供候选切换入口)
+
+### 修复
+- **[chat-server]**: 打包后可从 classpath 读取 docs/viztype.json，避免选图退化为 table
+  - 方案: [202602040217_superset-viztype-candidates](archive/2026-02/202602040217_superset-viztype-candidates/)
+- **[chat-server]**: 查询列缺失时回退语义/数据集列生成选图特征，避免固定为 table
+  - 方案: [202602040217_superset-viztype-candidates](archive/2026-02/202602040217_superset-viztype-candidates/)
+- **[chat-server]**: 查询结果为空时不使用 rowCount 触发饼图选择
+  - 方案: [202602040217_superset-viztype-candidates](archive/2026-02/202602040217_superset-viztype-candidates/)
+- **[chat-server]**: Superset 绘图场景恢复执行 SQL 查询用于选图
+  - 方案: [202602040217_superset-viztype-candidates](archive/2026-02/202602040217_superset-viztype-candidates/)
 - **[headless-server]**: 新增 Superset dataset 注册表（SQL 规范化 hash 去重、物理/虚拟区分）并支持增量同步
   - 方案: [202602060045_superset-sql-dataset](plan/202602060045_superset-sql-dataset/)
 - **[common]**: 新增 SQL 规范化工具用于 Superset dataset 去重
@@ -31,7 +41,9 @@
 - **[chat-server]**: 更新 chart params 前读取当前 params 并补齐 viz_type/datasource，避免 payload 校验失败
 - **[chat-server]**: 强制覆盖 chart params 关键字段（viz_type/datasource/dashboardId/slice_id/chart_id/url_params），与嵌入请求保持一致
 - **[chat-server]**: chart/dashboard 创建与 params 更新输出 debug payload，便于参数对比
-- **[chat-server]**: 为 table 图表补充 query_context，减少 guest payload 校验失败
+- **[chat-server]**: 为所有图表补充 query_context，并补齐 metrics/columns/orderby 访问控制字段，减少 guest payload 校验失败
+- **[chat-server]**: 支持配置模板 chart params/query_context 合并，优先对齐 Superset UI 生成结构
+- **[chat-server]**: 模板 chart 映射支持 vizType/vizKey/name 并读取 docs/viztype.json 做键归一化
 - **[headless-server]**: Superset 版本探测不再调用 /api/v1/version，避免 6.0.0 接口 404
 - **[headless-server]**: 物理 dataset 解析不到表名时自动回退虚拟 dataset，避免 Superset 422 表不存在错误
 - **[headless-server]**: 虚拟 dataset 缺失 SQL 时回填 normalized_sql，仍缺失则跳过同步，避免 Superset 422 表不存在错误
@@ -47,6 +59,12 @@
 - **[webapp-chat-sdk]**: 修复 guest token 错误信息解析与嵌入 SDK 类型不兼容导致的构建失败
 - **[webapp-chat-sdk]**: 嵌入看板高度改为基于消息容器与 iframe scrollHeight 多次同步，提升自适应稳定性
   - 方案: [202602040218_superset-embed-chat](archive/2026-02/202602040218_superset-embed-chat/)
+- **[chat-server]**: Superset dashboard 列表支持 accessToken 拉取，避免列表为空
+  - 方案: [202602081133_superset-dashboard-access-token](archive/2026-02/202602081133_superset-dashboard-access-token/)
+- **[chat-server]**: 按 Superset 前端 buildQuery 规则对齐各 vizType 的 query_context 关键字段，提升嵌入 chart payload 一致性
+- **[chat-server]**: 补齐 legacy vizType 的 query_context 模板（mapbox/partition/rose/para 等），完善 metrics/columns/orderby/time_offsets 对齐
+- **[supersonic-fe]**: superset-embed-test.html 增加 Supersonic API Base 与错误提示，修复 dashboard 列表为空
+  - 方案: [202602080832_superset-dashboard-list](archive/2026-02/202602080832_superset-dashboard-list/)
 
 ### 新增
 - **[chat-server]**: 基于 viztype.json 全量生成 form_data 模板，缺失必填字段时跳过候选并允许回退 table
@@ -59,6 +77,9 @@
 - **[supersonic-fe]**: superset-embed-test.html 对齐聊天嵌入配置，保留图表控件
   - 类型: 微调（无方案包）
   - 文件: webapp/packages/supersonic-fe/public/superset-embed-test.html
+- **[supersonic-fe]**: superset-embed-test.html 调整看板容器为 1000x720 并支持自适应高度
+  - 类型: 微调（无方案包）
+  - 文件: webapp/packages/supersonic-fe/public/superset-embed-test.html:13-19
 
 ## [0.9.10] - 2026-02-03
 

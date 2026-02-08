@@ -17,16 +17,27 @@ import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginCo
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetVizTypeSelector;
 import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
 import com.tencent.supersonic.chat.server.service.PluginService;
+import com.tencent.supersonic.common.config.ChatModel;
+import com.tencent.supersonic.common.pojo.ChatApp;
+import com.tencent.supersonic.common.pojo.ChatModelConfig;
 import com.tencent.supersonic.common.pojo.QueryColumn;
+import com.tencent.supersonic.common.service.ChatModelService;
 import com.tencent.supersonic.common.util.ContextUtils;
 import com.tencent.supersonic.common.util.JsonUtil;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
+import com.tencent.supersonic.headless.api.pojo.SchemaElementType;
 import com.tencent.supersonic.headless.api.pojo.SemanticParseInfo;
 import com.tencent.supersonic.headless.api.pojo.response.QueryState;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetColumn;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetInfo;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetMetric;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetSyncService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.input.Prompt;
+import dev.langchain4j.model.input.PromptTemplate;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.provider.ModelProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
@@ -34,15 +45,32 @@ import org.springframework.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class SupersetChartProcessor implements ExecuteResultProcessor {
 
     public static final String QUERY_MODE = "SUPERSET";
+    private static final String FORMDATA_LLM_PROMPT = "" + "#Role: You are a Superset formData key fields generator.\n"
+            + "#Task: Given viz_type and dataset metadata, generate key fields for formData.\n"
+            + "#Rules:\n"
+            + "1. ONLY use fields in #Columns and #Metrics.\n"
+            + "2. Provide required keys for the viz_type; omit others.\n"
+            + "3. Return JSON only, no extra text.\n"
+            + "4. Output fields: query_mode, metrics, metrics_b, metric, groupby, columns, column, granularity_sqla, x_axis, y_axis,\n"
+            + "   source, target, entity, latitude, longitude, start, end, x, y, size, all_columns, all_columns_x, all_columns_y.\n"
+            + "5. Arrays must be JSON arrays; strings must be JSON strings.\n"
+            + "#UserInstruction: {{instruction}}\n"
+            + "#VizType: {{viz_type}}\n"
+            + "#RequiredKeys: {{required_keys}}\n"
+            + "#Columns: {{columns}}\n"
+            + "#Metrics: {{metrics}}\n"
+            + "#Response:";
 
     @Override
     public boolean accept(ExecuteContext executeContext) {
@@ -89,10 +117,6 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         response.setPluginType(plugin.getType());
 
         String sql = resolveSql(queryResult, executeContext.getParseInfo());
-        List<SupersetVizTypeSelector.VizTypeItem> vizTypeCandidates =
-                resolveVizTypeCandidates(config, queryResult, executeContext);
-        String vizType = resolvePrimaryVizType(vizTypeCandidates);
-        response.setVizType(vizType);
         if (StringUtils.isBlank(sql) || StringUtils.isBlank(config.getBaseUrl())
                 || !config.hasValidAuthConfig()) {
             response.setFallback(true);
@@ -120,6 +144,14 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return;
         }
         ensureQueryColumns(queryResult, datasetInfo);
+        List<SupersetVizTypeSelector.VizTypeItem> vizTypeCandidates =
+                resolveVizTypeCandidates(config, queryResult, executeContext, datasetInfo);
+        if (config.isVizTypeLlmEnabled()) {
+            vizTypeCandidates = ensureFormDataCandidates(config, executeContext, queryResult,
+                    datasetInfo, vizTypeCandidates);
+        }
+        String vizType = resolvePrimaryVizType(vizTypeCandidates);
+        response.setVizType(vizType);
         try {
             SupersetApiClient client = new SupersetApiClient(config);
             String chartName = buildChartName(executeContext, plugin);
@@ -234,19 +266,22 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             log.debug("superset sync service missing", ex);
             return null;
         }
+        SemanticParseInfo parseInfo = executeContext.getParseInfo();
         SupersetDatasetInfo datasetInfo = syncService.registerAndSyncDataset(
-                executeContext.getParseInfo(), sql,
-                executeContext.getRequest() == null ? null : executeContext.getRequest().getUser());
+                parseInfo, sql,
+                executeContext.getRequest() == null ? null
+                        : executeContext.getRequest().getUser());
         if (datasetInfo == null) {
             log.debug("superset dataset register failed, dataSetId={}",
-                    executeContext.getParseInfo().getDataSetId());
+                    parseInfo == null ? null : parseInfo.getDataSetId());
             return null;
         }
         log.debug("superset dataset registered, dataSetId={}, supersetDatasetId={}, databaseId={}, schema={}",
-                executeContext.getParseInfo().getDataSetId(), datasetInfo.getId(),
+                parseInfo == null ? null : parseInfo.getDataSetId(), datasetInfo.getId(),
                 datasetInfo.getDatabaseId(), datasetInfo.getSchema());
         return datasetInfo;
     }
+
 
     private void ensureQueryColumns(QueryResult queryResult, SupersetDatasetInfo datasetInfo) {
         if (queryResult == null || datasetInfo == null
@@ -274,7 +309,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     }
 
     private List<SupersetVizTypeSelector.VizTypeItem> resolveVizTypeCandidates(
-            SupersetPluginConfig config, QueryResult queryResult, ExecuteContext executeContext) {
+            SupersetPluginConfig config, QueryResult queryResult, ExecuteContext executeContext,
+            SupersetDatasetInfo datasetInfo) {
         if (StringUtils.isNotBlank(config.getVizType())
                 && !"AUTO".equalsIgnoreCase(config.getVizType())) {
             SupersetVizTypeSelector.VizTypeItem configured =
@@ -285,7 +321,169 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         String queryText = executeContext == null || executeContext.getRequest() == null ? null
                 : executeContext.getRequest().getQueryText();
         Agent agent = executeContext == null ? null : executeContext.getAgent();
-        return SupersetVizTypeSelector.selectCandidates(config, queryResult, queryText, agent);
+        QueryResult resolvedResult = resolveQueryResultForVizType(queryResult,
+                executeContext == null ? null : executeContext.getParseInfo(), datasetInfo);
+        return SupersetVizTypeSelector.selectCandidates(config, resolvedResult, queryText, agent);
+    }
+
+    private List<SupersetVizTypeSelector.VizTypeItem> ensureFormDataCandidates(
+            SupersetPluginConfig config, ExecuteContext executeContext, QueryResult queryResult,
+            SupersetDatasetInfo datasetInfo,
+            List<SupersetVizTypeSelector.VizTypeItem> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return candidates;
+        }
+        List<SupersetVizTypeSelector.VizTypeItem> validated = new ArrayList<>();
+        SemanticParseInfo parseInfo = executeContext == null ? null : executeContext.getParseInfo();
+        Agent agent = executeContext == null ? null : executeContext.getAgent();
+        String queryText = executeContext == null || executeContext.getRequest() == null ? null
+                : executeContext.getRequest().getQueryText();
+        for (SupersetVizTypeSelector.VizTypeItem candidate : candidates) {
+            if (candidate == null || StringUtils.isBlank(candidate.getVizType())) {
+                continue;
+            }
+            String vizType = candidate.getVizType();
+            try {
+                buildFormData(config, parseInfo, queryResult, datasetInfo, vizType, agent,
+                        queryText);
+                validated.add(candidate);
+            } catch (Exception ex) {
+                log.warn("superset viztype candidate invalid, vizType={}, reason={}", vizType,
+                        ex.getMessage());
+                log.debug("superset viztype candidate formData failed", ex);
+            }
+        }
+        if (!validated.isEmpty()) {
+            return validated;
+        }
+        SupersetVizTypeSelector.VizTypeItem fallback =
+                SupersetVizTypeSelector.resolveItemByVizType("table", candidates);
+        if (fallback != null) {
+            try {
+                buildFormData(config, parseInfo, queryResult, datasetInfo, fallback.getVizType(),
+                        agent, queryText);
+                return Collections.singletonList(fallback);
+            } catch (Exception ex) {
+                log.warn("superset viztype fallback formData failed, reason={}", ex.getMessage());
+                log.debug("superset viztype fallback formData error", ex);
+            }
+        }
+        return candidates;
+    }
+
+    private QueryResult resolveQueryResultForVizType(QueryResult queryResult,
+            SemanticParseInfo parseInfo, SupersetDatasetInfo datasetInfo) {
+        if (queryResult == null) {
+            return null;
+        }
+        List<QueryColumn> queryColumns = queryResult.getQueryColumns();
+        if (queryColumns != null && !queryColumns.isEmpty()) {
+            return queryResult;
+        }
+        List<QueryColumn> parsedColumns = buildColumnsFromParse(parseInfo);
+        List<QueryColumn> resolvedColumns = parsedColumns.isEmpty()
+                ? buildColumnsFromDataset(datasetInfo)
+                : parsedColumns;
+        if (resolvedColumns.isEmpty()) {
+            return queryResult;
+        }
+        QueryResult resolved = new QueryResult();
+        resolved.setQueryColumns(resolvedColumns);
+        resolved.setQueryResults(queryResult.getQueryResults());
+        resolved.setQueryMode(queryResult.getQueryMode());
+        log.debug("superset viztype fallback columns applied, metrics={}, dimensions={}",
+                parseInfo == null || parseInfo.getMetrics() == null ? 0
+                        : parseInfo.getMetrics().size(),
+                parseInfo == null || parseInfo.getDimensions() == null ? 0
+                        : parseInfo.getDimensions().size());
+        return resolved;
+    }
+
+    private List<QueryColumn> buildColumnsFromDataset(SupersetDatasetInfo datasetInfo) {
+        if (datasetInfo == null) {
+            return Collections.emptyList();
+        }
+        List<QueryColumn> columns = new ArrayList<>();
+        List<SupersetDatasetMetric> metrics =
+                datasetInfo.getMetrics() == null ? Collections.emptyList()
+                        : datasetInfo.getMetrics();
+        List<String> metricNames = metrics.stream().map(SupersetDatasetMetric::getMetricName)
+                .filter(StringUtils::isNotBlank).collect(Collectors.toList());
+        for (SupersetDatasetMetric metric : metrics) {
+            if (metric == null || StringUtils.isBlank(metric.getMetricName())) {
+                continue;
+            }
+            QueryColumn column = new QueryColumn();
+            column.setName(metric.getMetricName());
+            column.setBizName(metric.getMetricName());
+            column.setShowType("NUMBER");
+            column.setType("DOUBLE");
+            columns.add(column);
+        }
+        List<SupersetDatasetColumn> datasetColumns =
+                datasetInfo.getColumns() == null ? Collections.emptyList()
+                        : datasetInfo.getColumns();
+        for (SupersetDatasetColumn datasetColumn : datasetColumns) {
+            if (datasetColumn == null || StringUtils.isBlank(datasetColumn.getColumnName())) {
+                continue;
+            }
+            if (metricNames.contains(datasetColumn.getColumnName())) {
+                continue;
+            }
+            boolean isTime = Boolean.TRUE.equals(datasetColumn.getIsDttm());
+            boolean isGroupBy = Boolean.TRUE.equals(datasetColumn.getGroupby());
+            if (!isTime && !isGroupBy) {
+                continue;
+            }
+            QueryColumn column = new QueryColumn();
+            column.setName(datasetColumn.getColumnName());
+            column.setBizName(datasetColumn.getColumnName());
+            column.setShowType(isTime ? "DATE" : "CATEGORY");
+            column.setType(isTime ? "DATE"
+                    : StringUtils.defaultIfBlank(datasetColumn.getType(), "STRING"));
+            columns.add(column);
+        }
+        return columns;
+    }
+
+    private List<QueryColumn> buildColumnsFromParse(SemanticParseInfo parseInfo) {
+        if (parseInfo == null) {
+            return Collections.emptyList();
+        }
+        List<QueryColumn> columns = new ArrayList<>();
+        if (parseInfo.getMetrics() != null) {
+            parseInfo.getMetrics().forEach(metric -> {
+                if (metric == null) {
+                    return;
+                }
+                QueryColumn column = new QueryColumn();
+                column.setName(StringUtils.defaultIfBlank(metric.getName(),
+                        metric.getBizName()));
+                column.setBizName(StringUtils.defaultIfBlank(metric.getBizName(),
+                        metric.getName()));
+                column.setShowType("NUMBER");
+                column.setType("DOUBLE");
+                columns.add(column);
+            });
+        }
+        if (parseInfo.getDimensions() != null) {
+            parseInfo.getDimensions().forEach(dimension -> {
+                if (dimension == null) {
+                    return;
+                }
+                QueryColumn column = new QueryColumn();
+                column.setName(StringUtils.defaultIfBlank(dimension.getName(),
+                        dimension.getBizName()));
+                column.setBizName(StringUtils.defaultIfBlank(dimension.getBizName(),
+                        dimension.getName()));
+                boolean isTime = SchemaElementType.DATE.equals(dimension.getType())
+                        || dimension.isPartitionTime();
+                column.setShowType(isTime ? "DATE" : "CATEGORY");
+                column.setType(isTime ? "DATE" : "STRING");
+                columns.add(column);
+            });
+        }
+        return columns;
     }
 
     private String resolvePrimaryVizType(List<SupersetVizTypeSelector.VizTypeItem> candidates) {
@@ -335,9 +533,11 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             String vizType = candidate.getVizType();
             String candidateChartName = buildCandidateChartName(chartName, vizType, i);
             try {
-                Map<String, Object> formData =
-                        buildFormData(config, executeContext.getParseInfo(), queryResult,
-                                datasetInfo, vizType);
+                Map<String, Object> formData = buildFormData(config,
+                        executeContext.getParseInfo(), queryResult, datasetInfo, vizType,
+                        executeContext.getAgent(),
+                        executeContext.getRequest() == null ? null
+                                : executeContext.getRequest().getQueryText());
                 log.debug(
                         "superset chart formData prepared, vizType={}, keys={}, size={}, datasetColumns={}, datasetMetrics={}, parseMetrics={}, parseDimensions={}",
                         vizType, formData.keySet(), formData.size(),
@@ -375,9 +575,11 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         if (results.isEmpty() && !hasTableCandidate) {
             String fallbackVizType = "table";
             try {
-                Map<String, Object> formData =
-                        buildFormData(config, executeContext.getParseInfo(), queryResult,
-                                datasetInfo, fallbackVizType);
+                Map<String, Object> formData = buildFormData(config,
+                        executeContext.getParseInfo(), queryResult, datasetInfo, fallbackVizType,
+                        executeContext.getAgent(),
+                        executeContext.getRequest() == null ? null
+                                : executeContext.getRequest().getQueryText());
                 SupersetChartInfo chartInfo =
                         client.createEmbeddedChart(sql, chartName, fallbackVizType, formData,
                                 resolvedDatasetId, databaseId, schema, dashboardTags);
@@ -413,7 +615,19 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
      * Returns: 合并后的 formData。
      */
     Map<String, Object> buildFormData(SupersetPluginConfig config, SemanticParseInfo parseInfo,
-            QueryResult queryResult, SupersetDatasetInfo datasetInfo, String vizType) {
+            QueryResult queryResult, SupersetDatasetInfo datasetInfo, String vizType, Agent agent,
+            String queryText) {
+        if (config != null && config.isVizTypeLlmEnabled()) {
+            Map<String, Object> llmFormData = buildLlmFormData(config, parseInfo, queryResult,
+                    datasetInfo, vizType, agent, queryText);
+            Map<String, Object> customFormData = config.getFormData();
+            if (customFormData == null || customFormData.isEmpty()) {
+                return llmFormData;
+            }
+            Map<String, Object> merged = new HashMap<>(llmFormData);
+            merged.putAll(customFormData);
+            return merged;
+        }
         Map<String, Object> autoFormData =
                 buildAutoFormData(parseInfo, queryResult, datasetInfo, vizType);
         Map<String, Object> customFormData = config == null ? null : config.getFormData();
@@ -479,6 +693,424 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             default:
                 return buildGenericFormData(context);
         }
+    }
+
+    private Map<String, Object> buildLlmFormData(SupersetPluginConfig config,
+            SemanticParseInfo parseInfo, QueryResult queryResult, SupersetDatasetInfo datasetInfo,
+            String vizType, Agent agent, String queryText) {
+        FormDataProfile profile = resolveFormDataProfile(vizType);
+        JSONObject llmKeys = resolveLlmFormDataKeys(config, queryResult, datasetInfo, vizType,
+                profile, agent, queryText);
+        validateLlmFormDataKeys(profile, llmKeys);
+        Map<String, Object> formData = new HashMap<>();
+        String queryMode = llmKeys.getString("query_mode");
+        if (StringUtils.isBlank(queryMode)) {
+            queryMode = "aggregate";
+        }
+        formData.put("query_mode", queryMode);
+        applyLlmKey(formData, llmKeys, "metrics");
+        applyLlmKey(formData, llmKeys, "metrics_b");
+        applyLlmKey(formData, llmKeys, "metric");
+        applyLlmKey(formData, llmKeys, "groupby");
+        applyLlmKey(formData, llmKeys, "columns");
+        applyLlmKey(formData, llmKeys, "column");
+        applyLlmKey(formData, llmKeys, "granularity_sqla");
+        applyLlmKey(formData, llmKeys, "x_axis");
+        applyLlmKey(formData, llmKeys, "y_axis");
+        applyLlmKey(formData, llmKeys, "source");
+        applyLlmKey(formData, llmKeys, "target");
+        applyLlmKey(formData, llmKeys, "entity");
+        applyLlmKey(formData, llmKeys, "latitude");
+        applyLlmKey(formData, llmKeys, "longitude");
+        applyLlmKey(formData, llmKeys, "start");
+        applyLlmKey(formData, llmKeys, "end");
+        applyLlmKey(formData, llmKeys, "x");
+        applyLlmKey(formData, llmKeys, "y");
+        applyLlmKey(formData, llmKeys, "size");
+        applyLlmKey(formData, llmKeys, "all_columns");
+        applyLlmKey(formData, llmKeys, "all_columns_x");
+        applyLlmKey(formData, llmKeys, "all_columns_y");
+        normalizeLlmMetrics(formData, datasetInfo);
+        if (FormDataProfile.TABLE == profile) {
+            applyTableDefaults(formData);
+        }
+        return formData;
+    }
+
+    private void normalizeLlmMetrics(Map<String, Object> formData, SupersetDatasetInfo datasetInfo) {
+        if (formData == null || datasetInfo == null) {
+            return;
+        }
+        Map<String, SupersetDatasetColumn> columnMap =
+                toColumnMap(datasetInfo.getColumns() == null
+                        ? Collections.emptyList()
+                        : datasetInfo.getColumns());
+        List<String> metricNames = resolveDatasetMetrics(datasetInfo);
+        normalizeMetricField(formData, columnMap, metricNames, "metric");
+        normalizeMetricListField(formData, columnMap, metricNames, "metrics");
+        normalizeMetricListField(formData, columnMap, metricNames, "metrics_b");
+    }
+
+    private void normalizeMetricField(Map<String, Object> formData,
+            Map<String, SupersetDatasetColumn> columnMap, List<String> metricNames, String key) {
+        Object value = formData.get(key);
+        if (!(value instanceof String)) {
+            return;
+        }
+        String metricName = (String) value;
+        if (metricNames.contains(metricName)) {
+            return;
+        }
+        SupersetDatasetColumn column = columnMap.get(normalizeName(metricName));
+        if (column != null) {
+            formData.put(key, buildAdhocMetric(column, "SUM"));
+        }
+    }
+
+    private void normalizeMetricListField(Map<String, Object> formData,
+            Map<String, SupersetDatasetColumn> columnMap, List<String> metricNames, String key) {
+        Object value = formData.get(key);
+        if (!(value instanceof List)) {
+            return;
+        }
+        List<?> rawList = (List<?>) value;
+        if (rawList.isEmpty()) {
+            return;
+        }
+        List<Object> normalized = new ArrayList<>();
+        for (Object item : rawList) {
+            if (item instanceof Map) {
+                normalized.add(item);
+                continue;
+            }
+            if (!(item instanceof String)) {
+                continue;
+            }
+            String name = (String) item;
+            if (metricNames.contains(name)) {
+                normalized.add(name);
+                continue;
+            }
+            SupersetDatasetColumn column = columnMap.get(normalizeName(name));
+            if (column != null) {
+                normalized.add(buildAdhocMetric(column, "SUM"));
+            }
+        }
+        if (!normalized.isEmpty()) {
+            formData.put(key, normalized);
+        }
+    }
+
+    private JSONObject resolveLlmFormDataKeys(SupersetPluginConfig config, QueryResult queryResult,
+            SupersetDatasetInfo datasetInfo, String vizType, FormDataProfile profile, Agent agent,
+            String queryText) {
+        ChatLanguageModel chatLanguageModel = resolveChatModel(config, agent);
+        if (chatLanguageModel == null) {
+            throw new IllegalStateException("superset formdata llm chat model missing");
+        }
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("instruction", StringUtils.defaultString(queryText));
+        variables.put("viz_type", StringUtils.defaultString(vizType));
+        variables.put("required_keys", JsonUtil.toString(resolveRequiredKeys(profile)));
+        variables.put("columns", JsonUtil.toString(resolveDatasetColumns(datasetInfo)));
+        variables.put("metrics", JsonUtil.toString(resolveDatasetMetrics(datasetInfo)));
+        Prompt prompt = PromptTemplate.from(FORMDATA_LLM_PROMPT).apply(variables);
+        Response<AiMessage> response = chatLanguageModel.generate(prompt.toUserMessage());
+        String answer =
+                response == null || response.content() == null ? null : response.content().text();
+        log.info("superset formdata llm req:\n{} \nresp:\n{}", prompt.text(), answer);
+        JSONObject payload = resolveJsonPayload(answer);
+        if (payload == null) {
+            throw new IllegalStateException("superset formdata llm response invalid");
+        }
+        validateLlmFieldsAgainstDataset(payload, datasetInfo);
+        return payload;
+    }
+
+    private void validateLlmFormDataKeys(FormDataProfile profile, JSONObject payload) {
+        if (payload == null) {
+            throw new IllegalStateException("superset formdata llm response empty");
+        }
+        switch (profile) {
+            case TABLE:
+                if (!hasList(payload, "columns")
+                        && !(hasList(payload, "groupby") && hasMetrics(payload))) {
+                    throw new IllegalStateException("vizType requires columns or groupby+metrics");
+                }
+                break;
+            case TIME_SERIES:
+            case TIME_SERIES_MULTI:
+                if (!hasList(payload, "metrics") || StringUtils
+                        .isBlank(payload.getString("granularity_sqla"))) {
+                    throw new IllegalStateException("vizType requires metrics + granularity");
+                }
+                break;
+            case KPI:
+                if (StringUtils.isBlank(payload.getString("metric"))) {
+                    throw new IllegalStateException("vizType requires metric");
+                }
+                break;
+            case KPI_TIME:
+                if (StringUtils.isBlank(payload.getString("metric"))
+                        || StringUtils.isBlank(payload.getString("granularity_sqla"))) {
+                    throw new IllegalStateException("vizType requires metric + granularity");
+                }
+                break;
+            case PROPORTION:
+            case RANKING:
+                if (StringUtils.isBlank(payload.getString("metric"))
+                        || !hasList(payload, "groupby")) {
+                    throw new IllegalStateException("vizType requires metric + groupby");
+                }
+                break;
+            case DISTRIBUTION:
+                if (!hasList(payload, "metrics")) {
+                    throw new IllegalStateException("vizType requires metrics");
+                }
+                break;
+            case HISTOGRAM:
+                if (StringUtils.isBlank(payload.getString("column"))) {
+                    throw new IllegalStateException("vizType requires column");
+                }
+                break;
+            case HEATMAP:
+                if (StringUtils.isBlank(payload.getString("metric"))
+                        || StringUtils.isBlank(payload.getString("x_axis"))
+                        || StringUtils.isBlank(payload.getString("y_axis"))) {
+                    throw new IllegalStateException("vizType requires metric + x_axis + y_axis");
+                }
+                break;
+            case CALENDAR:
+                if (StringUtils.isBlank(payload.getString("metric"))
+                        || StringUtils.isBlank(payload.getString("granularity_sqla"))) {
+                    throw new IllegalStateException("vizType requires metric + granularity");
+                }
+                break;
+            case BUBBLE:
+                if (StringUtils.isBlank(payload.getString("x"))
+                        || StringUtils.isBlank(payload.getString("y"))) {
+                    throw new IllegalStateException("vizType requires x + y");
+                }
+                break;
+            case FLOW:
+                if (StringUtils.isBlank(payload.getString("source"))
+                        || StringUtils.isBlank(payload.getString("target"))
+                        || StringUtils.isBlank(payload.getString("metric"))) {
+                    throw new IllegalStateException("vizType requires source + target + metric");
+                }
+                break;
+            case MAP_LATLON:
+                if (StringUtils.isBlank(payload.getString("latitude"))
+                        || StringUtils.isBlank(payload.getString("longitude"))) {
+                    throw new IllegalStateException(
+                            "vizType requires latitude + longitude");
+                }
+                break;
+            case MAP_REGION:
+                if (StringUtils.isBlank(payload.getString("entity"))
+                        || StringUtils.isBlank(payload.getString("metric"))) {
+                    throw new IllegalStateException("vizType requires entity + metric");
+                }
+                break;
+            case GANTT:
+                if (StringUtils.isBlank(payload.getString("start"))
+                        || StringUtils.isBlank(payload.getString("end"))
+                        || !hasList(payload, "groupby")) {
+                    throw new IllegalStateException("vizType requires start + end + groupby");
+                }
+                break;
+            case HANDLEBARS:
+                if (!hasList(payload, "columns") && !hasList(payload, "all_columns")) {
+                    throw new IllegalStateException("vizType requires columns");
+                }
+                break;
+            case GENERIC:
+            default:
+                if (StringUtils.isBlank(payload.getString("metric"))
+                        || !hasList(payload, "groupby")) {
+                    throw new IllegalStateException("vizType requires metric + groupby");
+                }
+                break;
+        }
+    }
+
+    private boolean hasMetrics(JSONObject payload) {
+        if (payload == null) {
+            return false;
+        }
+        return hasList(payload, "metrics") || StringUtils.isNotBlank(payload.getString("metric"));
+    }
+
+    private boolean hasList(JSONObject payload, String key) {
+        if (payload == null || StringUtils.isBlank(key)) {
+            return false;
+        }
+        Object value = payload.get(key);
+        if (value instanceof List) {
+            return !((List<?>) value).isEmpty();
+        }
+        if (value instanceof String) {
+            return StringUtils.isNotBlank((String) value);
+        }
+        return false;
+    }
+
+    private void applyLlmKey(Map<String, Object> formData, JSONObject payload, String key) {
+        if (formData == null || payload == null || StringUtils.isBlank(key)) {
+            return;
+        }
+        if (!payload.containsKey(key)) {
+            return;
+        }
+        Object value = payload.get(key);
+        if (value instanceof String && StringUtils.isBlank((String) value)) {
+            return;
+        }
+        formData.put(key, value);
+    }
+
+    private void validateLlmFieldsAgainstDataset(JSONObject payload,
+            SupersetDatasetInfo datasetInfo) {
+        if (payload == null || datasetInfo == null) {
+            return;
+        }
+        Set<String> metricNames = resolveDatasetMetrics(datasetInfo).stream()
+                .map(String::valueOf).collect(Collectors.toSet());
+        Set<String> columnNames = resolveDatasetColumns(datasetInfo).stream()
+                .map(String::valueOf).collect(Collectors.toSet());
+        Set<String> metricAllowList = new HashSet<>(metricNames);
+        metricAllowList.addAll(columnNames);
+        validateFieldInSet(payload, "metric", metricAllowList);
+        validateFieldListInSet(payload, "metrics", metricAllowList);
+        validateFieldListInSet(payload, "metrics_b", metricAllowList);
+        validateFieldListInSet(payload, "groupby", columnNames);
+        validateFieldListInSet(payload, "columns", columnNames);
+        validateFieldInSet(payload, "column", columnNames);
+        validateFieldListInSet(payload, "all_columns", columnNames);
+        validateFieldInSet(payload, "granularity_sqla", columnNames);
+        validateFieldInSet(payload, "x_axis", columnNames);
+        validateFieldInSet(payload, "y_axis", columnNames);
+        validateFieldInSet(payload, "source", columnNames);
+        validateFieldInSet(payload, "target", columnNames);
+        validateFieldInSet(payload, "entity", columnNames);
+        validateFieldInSet(payload, "latitude", columnNames);
+        validateFieldInSet(payload, "longitude", columnNames);
+        validateFieldInSet(payload, "start", columnNames);
+        validateFieldInSet(payload, "end", columnNames);
+        validateFieldInSet(payload, "x", columnNames);
+        validateFieldInSet(payload, "y", columnNames);
+        validateFieldInSet(payload, "size", columnNames);
+        validateFieldInSet(payload, "all_columns_x", columnNames);
+        validateFieldInSet(payload, "all_columns_y", columnNames);
+    }
+
+    private void validateFieldInSet(JSONObject payload, String key, Set<String> allowList) {
+        if (payload == null || StringUtils.isBlank(key) || allowList == null || allowList.isEmpty()) {
+            return;
+        }
+        String value = payload.getString(key);
+        if (StringUtils.isBlank(value)) {
+            return;
+        }
+        if (!allowList.contains(value)) {
+            throw new IllegalStateException("llm formData field invalid: " + key);
+        }
+    }
+
+    private void validateFieldListInSet(JSONObject payload, String key, Set<String> allowList) {
+        if (payload == null || StringUtils.isBlank(key) || allowList == null || allowList.isEmpty()) {
+            return;
+        }
+        Object value = payload.get(key);
+        if (!(value instanceof List)) {
+            if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+                if (!allowList.contains(value)) {
+                    throw new IllegalStateException("llm formData field invalid: " + key);
+                }
+            }
+            return;
+        }
+        for (Object item : (List<?>) value) {
+            if (item == null) {
+                continue;
+            }
+            String name = String.valueOf(item);
+            if (!allowList.contains(name)) {
+                throw new IllegalStateException("llm formData field invalid: " + key);
+            }
+        }
+    }
+
+    private List<String> resolveRequiredKeys(FormDataProfile profile) {
+        List<String> required = new ArrayList<>();
+        switch (profile) {
+            case TABLE:
+                required.add("columns or (metrics + groupby)");
+                break;
+            case TIME_SERIES:
+            case TIME_SERIES_MULTI:
+                required.add("metrics");
+                required.add("granularity_sqla");
+                break;
+            case KPI:
+                required.add("metric");
+                break;
+            case KPI_TIME:
+                required.add("metric");
+                required.add("granularity_sqla");
+                break;
+            case PROPORTION:
+            case RANKING:
+                required.add("metric");
+                required.add("groupby");
+                break;
+            case DISTRIBUTION:
+                required.add("metrics");
+                break;
+            case HISTOGRAM:
+                required.add("column");
+                break;
+            case HEATMAP:
+                required.add("metric");
+                required.add("x_axis");
+                required.add("y_axis");
+                break;
+            case CALENDAR:
+                required.add("metric");
+                required.add("granularity_sqla");
+                break;
+            case BUBBLE:
+                required.add("x");
+                required.add("y");
+                break;
+            case FLOW:
+                required.add("source");
+                required.add("target");
+                required.add("metric");
+                break;
+            case MAP_LATLON:
+                required.add("latitude");
+                required.add("longitude");
+                break;
+            case MAP_REGION:
+                required.add("entity");
+                required.add("metric");
+                break;
+            case GANTT:
+                required.add("start");
+                required.add("end");
+                required.add("groupby");
+                break;
+            case HANDLEBARS:
+                required.add("columns");
+                break;
+            case GENERIC:
+            default:
+                required.add("metric");
+                required.add("groupby");
+                break;
+        }
+        return required;
     }
 
     private FormDataContext buildFormDataContext(SemanticParseInfo parseInfo,
@@ -975,6 +1607,97 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         return false;
     }
 
+    private ChatLanguageModel resolveChatModel(SupersetPluginConfig config, Agent agent) {
+        Integer chatModelId = resolveChatModelId(config, agent);
+        if (chatModelId == null) {
+            return null;
+        }
+        ChatModelConfig chatModelConfig = resolveChatModelConfig(chatModelId);
+        if (chatModelConfig == null) {
+            return null;
+        }
+        return ModelProvider.getChatModel(chatModelConfig);
+    }
+
+    private Integer resolveChatModelId(SupersetPluginConfig config, Agent agent) {
+        if (config != null && config.getVizTypeLlmChatModelId() != null) {
+            return config.getVizTypeLlmChatModelId();
+        }
+        return resolveAgentChatModelId(agent);
+    }
+
+    private Integer resolveAgentChatModelId(Agent agent) {
+        if (agent == null) {
+            return null;
+        }
+        Map<String, ChatApp> chatAppConfig = agent.getChatAppConfig();
+        if (chatAppConfig == null || chatAppConfig.isEmpty()) {
+            return null;
+        }
+        Integer enabledChatModelId = resolveChatModelIdFromApps(chatAppConfig, true);
+        if (enabledChatModelId != null) {
+            return enabledChatModelId;
+        }
+        return resolveChatModelIdFromApps(chatAppConfig, false);
+    }
+
+    private Integer resolveChatModelIdFromApps(Map<String, ChatApp> chatAppConfig,
+            boolean enabledOnly) {
+        if (chatAppConfig == null || chatAppConfig.isEmpty()) {
+            return null;
+        }
+        ChatApp preferred = chatAppConfig.get("S2SQL_PARSER");
+        if (isChatAppUsable(preferred, enabledOnly)) {
+            return preferred.getChatModelId();
+        }
+        List<String> keys = new ArrayList<>(chatAppConfig.keySet());
+        Collections.sort(keys);
+        for (String key : keys) {
+            ChatApp app = chatAppConfig.get(key);
+            if (isChatAppUsable(app, enabledOnly)) {
+                return app.getChatModelId();
+            }
+        }
+        return null;
+    }
+
+    private boolean isChatAppUsable(ChatApp app, boolean enabledOnly) {
+        if (app == null || app.getChatModelId() == null) {
+            return false;
+        }
+        return !enabledOnly || app.isEnable();
+    }
+
+    private ChatModelConfig resolveChatModelConfig(Integer chatModelId) {
+        if (chatModelId == null) {
+            return null;
+        }
+        ChatModelService chatModelService = ContextUtils.getBean(ChatModelService.class);
+        if (chatModelService == null) {
+            return null;
+        }
+        ChatModel chatModel = chatModelService.getChatModel(chatModelId);
+        return chatModel == null ? null : chatModel.getConfig();
+    }
+
+    private JSONObject resolveJsonPayload(String response) {
+        if (StringUtils.isBlank(response)) {
+            return null;
+        }
+        int start = response.indexOf('{');
+        int end = response.lastIndexOf('}');
+        if (start < 0 || end <= start) {
+            return null;
+        }
+        String payload = response.substring(start, end + 1);
+        try {
+            return JSONObject.parseObject(payload);
+        } catch (Exception ex) {
+            log.warn("superset llm response parse failed", ex);
+            return null;
+        }
+    }
+
     private static class FormDataContext {
         private final List<SupersetDatasetColumn> datasetColumns;
         private final List<String> columns;
@@ -1023,6 +1746,21 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return Collections.emptyList();
         }
         return columns.stream().map(SupersetDatasetColumn::getColumnName)
+                .filter(StringUtils::isNotBlank).distinct().collect(Collectors.toList());
+    }
+
+    private List<String> resolveDatasetColumns(SupersetDatasetInfo datasetInfo) {
+        if (datasetInfo == null) {
+            return Collections.emptyList();
+        }
+        return resolveDatasetColumns(datasetInfo.getColumns());
+    }
+
+    private List<String> resolveDatasetMetrics(SupersetDatasetInfo datasetInfo) {
+        if (datasetInfo == null || CollectionUtils.isEmpty(datasetInfo.getMetrics())) {
+            return Collections.emptyList();
+        }
+        return datasetInfo.getMetrics().stream().map(SupersetDatasetMetric::getMetricName)
                 .filter(StringUtils::isNotBlank).distinct().collect(Collectors.toList());
     }
 

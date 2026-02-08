@@ -38,7 +38,12 @@ public class SupersetController {
     @PostMapping("dashboards")
     public List<SupersetDashboardInfo> dashboards(@RequestBody SupersetDashboardListReq req) {
         ChatPlugin plugin = resolveSupersetPlugin(req == null ? null : req.getPluginId());
-        SupersetApiClient client = new SupersetApiClient(buildConfig(plugin));
+        String accessToken = req == null ? null : req.getAccessToken();
+        SupersetApiClient client =
+                new SupersetApiClient(buildConfig(plugin, StringUtils.isNotBlank(accessToken)));
+        if (StringUtils.isNotBlank(accessToken)) {
+            return client.listDashboards(accessToken);
+        }
         return client.listDashboards();
     }
 
@@ -107,10 +112,16 @@ public class SupersetController {
     }
 
     private SupersetPluginConfig buildConfig(ChatPlugin plugin) {
+        return buildConfig(plugin, false);
+    }
+
+    private SupersetPluginConfig buildConfig(ChatPlugin plugin, boolean allowAccessToken) {
         SupersetPluginConfig config =
                 JsonUtil.toObject(plugin.getConfig(), SupersetPluginConfig.class);
-        if (config == null || !config.isEnabled() || StringUtils.isBlank(config.getBaseUrl())
-                || !config.hasValidAuthConfig()) {
+        if (config == null || !config.isEnabled() || StringUtils.isBlank(config.getBaseUrl())) {
+            throw new InvalidArgumentException("superset config invalid");
+        }
+        if (!allowAccessToken && !config.hasValidAuthConfig()) {
             throw new InvalidArgumentException("superset config invalid");
         }
         return config;
@@ -135,6 +146,8 @@ public class SupersetController {
         config.setVizTypeDenyList(supersetProperties.getVizTypeDenyList());
         config.setFormData(supersetProperties.getFormData());
         config.setHeight(supersetProperties.getHeight());
+        config.setTemplateChartId(supersetProperties.getTemplateChartId());
+        config.setTemplateChartIds(supersetProperties.getTemplateChartIds());
         config.setGuestTokenUserUsername(supersetProperties.getGuestTokenUserUsername());
         config.setGuestTokenUserFirstName(supersetProperties.getGuestTokenUserFirstName());
         config.setGuestTokenUserLastName(supersetProperties.getGuestTokenUserLastName());

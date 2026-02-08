@@ -6,4 +6,6 @@ import lombok.Data;
 public class SupersetDashboardListReq {
 
     private Long pluginId;
+
+    private String accessToken;
 }

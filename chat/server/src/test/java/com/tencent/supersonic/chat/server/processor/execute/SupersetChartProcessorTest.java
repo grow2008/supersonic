@@ -3,6 +3,7 @@ package com.tencent.supersonic.chat.server.processor.execute;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginConfig;
 import com.tencent.supersonic.chat.api.pojo.response.QueryResult;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
+import com.tencent.supersonic.headless.api.pojo.SchemaElementType;
 import com.tencent.supersonic.headless.api.pojo.SemanticParseInfo;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetColumn;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetInfo;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Method;
 
 public class SupersetChartProcessorTest {
 
@@ -27,7 +29,7 @@ public class SupersetChartProcessorTest {
                 buildColumn("name", "STRING", true, false)));
 
         Map<String, Object> formData =
-                processor.buildFormData(config, null, null, datasetInfo, "table");
+                processor.buildFormData(config, null, null, datasetInfo, "table", null, null);
 
         Assertions.assertEquals("raw", formData.get("query_mode"));
         Assertions.assertEquals(Arrays.asList("id", "name"), formData.get("all_columns"));
@@ -44,7 +46,8 @@ public class SupersetChartProcessorTest {
                 new QueryColumn("name", "STRING", "name")));
 
         Map<String, Object> formData =
-                processor.buildFormData(config, null, queryResult, datasetInfo, "table");
+                processor.buildFormData(config, null, queryResult, datasetInfo, "table", null,
+                        null);
 
         Assertions.assertEquals("raw", formData.get("query_mode"));
         Assertions.assertEquals(Arrays.asList("id", "name"), formData.get("all_columns"));
@@ -65,7 +68,7 @@ public class SupersetChartProcessorTest {
         datasetInfo.setMetrics(Collections.singletonList(buildMetric("amount")));
 
         Map<String, Object> formData =
-                processor.buildFormData(config, parseInfo, null, datasetInfo, "pie");
+                processor.buildFormData(config, parseInfo, null, datasetInfo, "pie", null, null);
 
         Assertions.assertEquals("amount", formData.get("metric"));
         Assertions.assertEquals(Collections.singletonList("category"), formData.get("groupby"));
@@ -86,7 +89,7 @@ public class SupersetChartProcessorTest {
 
         Map<String, Object> formData =
                 processor.buildFormData(config, parseInfo, null, datasetInfo,
-                        "echarts_timeseries_line");
+                        "echarts_timeseries_line", null, null);
 
         Object metrics = formData.get("metrics");
         Assertions.assertTrue(metrics instanceof List);
@@ -114,7 +117,48 @@ public class SupersetChartProcessorTest {
         datasetInfo.setMetrics(Collections.singletonList(buildMetric("amount")));
 
         Assertions.assertThrows(IllegalStateException.class,
-                () -> processor.buildFormData(config, parseInfo, null, datasetInfo, "heatmap_v2"));
+                () -> processor.buildFormData(config, parseInfo, null, datasetInfo, "heatmap_v2",
+                        null, null));
+    }
+
+    @Test
+    public void testBuildColumnsFromParseUsesMetricAndDate() throws Exception {
+        SupersetChartProcessor processor = new SupersetChartProcessor();
+        SemanticParseInfo parseInfo = new SemanticParseInfo();
+        parseInfo.getMetrics().add(SchemaElement.builder().bizName("count").name("访问人数")
+                .type(SchemaElementType.METRIC).build());
+        parseInfo.getDimensions().add(SchemaElement.builder().bizName("ds").name("时间")
+                .type(SchemaElementType.DATE).build());
+
+        Method method = SupersetChartProcessor.class.getDeclaredMethod("buildColumnsFromParse",
+                SemanticParseInfo.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<QueryColumn> columns = (List<QueryColumn>) method.invoke(processor, parseInfo);
+
+        Assertions.assertEquals(2, columns.size());
+        Assertions.assertEquals("NUMBER", columns.get(0).getShowType());
+        Assertions.assertEquals("DATE", columns.get(1).getShowType());
+    }
+
+    @Test
+    public void testBuildColumnsFromDatasetUsesMetricsAndGroupby() throws Exception {
+        SupersetChartProcessor processor = new SupersetChartProcessor();
+        SupersetDatasetInfo datasetInfo = new SupersetDatasetInfo();
+        datasetInfo.setMetrics(Collections.singletonList(buildMetric("count")));
+        datasetInfo.setColumns(Arrays.asList(buildColumn("ds", "DATE", true, true),
+                buildColumn("category", "STRING", true, false)));
+
+        Method method = SupersetChartProcessor.class.getDeclaredMethod("buildColumnsFromDataset",
+                SupersetDatasetInfo.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<QueryColumn> columns = (List<QueryColumn>) method.invoke(processor, datasetInfo);
+
+        Assertions.assertEquals(3, columns.size());
+        Assertions.assertEquals("NUMBER", columns.get(0).getShowType());
+        Assertions.assertEquals("DATE", columns.get(1).getShowType());
+        Assertions.assertEquals("CATEGORY", columns.get(2).getShowType());
     }
 
     private SupersetDatasetColumn buildColumn(String name, String type, boolean groupby,

@@ -11,8 +11,10 @@
         padding: 16px;
       }
       #container {
-        width: 100%;
-        height: 800px;
+        width: 1000px;
+        height: 720px;
+        max-width: 100%;
+        max-height: calc(100vh - 260px);
         border: 1px solid #e5e5e5;
       }
       .row {
@@ -49,6 +51,10 @@
       <input id="supersetDomain" value="http://10.0.12.244:8088" />
     </div>
     <div class="row">
+      <label>Supersonic API Base</label>
+      <input id="supersonicApiBase" placeholder="http://127.0.0.1:9090" />
+    </div>
+    <div class="row">
       <label>Dashboards 接口</label>
       <input id="dashboardsApi" value="/api/chat/superset/dashboards" />
     </div>
@@ -57,6 +63,7 @@
       <select id="dashboardSelect"></select>
       <button id="refreshDashboardsBtn">加载列表</button>
     </div>
+    <div class="row hint" id="dashboardHint"></div>
     <div class="row">
       <label>Embedded ID</label>
       <input id="embeddedId" placeholder="选择 dashboard 后自动填充" />
@@ -90,8 +97,10 @@
       const refreshDashboardsBtn = document.getElementById('refreshDashboardsBtn');
       const dashboardSelect = document.getElementById('dashboardSelect');
       const dashboardsApiInput = document.getElementById('dashboardsApi');
+      const supersonicApiBaseInput = document.getElementById('supersonicApiBase');
       const embeddedIdInput = document.getElementById('embeddedId');
       const embeddedIdHint = document.getElementById('embeddedIdHint');
+      const dashboardHint = document.getElementById('dashboardHint');
       const authTokenInput = document.getElementById('authToken');
       const authTokenHint = document.getElementById('authTokenHint');
 
@@ -106,6 +115,42 @@
 
       const normalizeBearer = token => (token.startsWith('Bearer ') ? token : `Bearer ${token}`);
 
+      const normalizeBaseUrl = value => {
+        const trimmed = (value || '').trim();
+        if (!trimmed) {
+          return '';
+        }
+        return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+      };
+
+      const resolveSupersonicBaseUrl = () => {
+        const inputValue = normalizeBaseUrl(supersonicApiBaseInput.value);
+        if (inputValue) {
+          return inputValue;
+        }
+        if (window.location.origin && !window.location.origin.startsWith('file://')) {
+          return window.location.origin;
+        }
+        return '';
+      };
+
+      const buildApiUrl = (baseUrl, apiPath) => {
+        const trimmed = (apiPath || '').trim();
+        if (!trimmed) {
+          return '';
+        }
+        if (/^https?:\/\//i.test(trimmed)) {
+          return trimmed;
+        }
+        if (!baseUrl) {
+          return trimmed;
+        }
+        if (trimmed.startsWith('/')) {
+          return `${baseUrl}${trimmed}`;
+        }
+        return `${baseUrl}/${trimmed}`;
+      };
+
       const buildAuthHeaders = authToken => {
         const headers = { 'Content-Type': 'application/json' };
         if (authToken) {
@@ -114,6 +159,26 @@
           headers.auth = bearer;
         }
         return headers;
+      };
+
+      const parseResultList = data => {
+        if (Array.isArray(data)) {
+          return data;
+        }
+        if (Array.isArray(data?.data)) {
+          return data.data;
+        }
+        if (Array.isArray(data?.result)) {
+          return data.result;
+        }
+        if (Array.isArray(data?.data?.result)) {
+          return data.data.result;
+        }
+        return [];
+      };
+
+      const updateDashboardHint = message => {
+        dashboardHint.textContent = message || '';
       };
 
       const fetchGuestToken = async (apiUrl, embeddedId, authToken) => {
@@ -136,11 +201,13 @@
       };
 
       const fetchDashboards = async ({ silent = false } = {}) => {
-        const apiUrl = dashboardsApiInput.value.trim();
+        const baseUrl = resolveSupersonicBaseUrl();
+        const apiUrl = buildApiUrl(baseUrl, dashboardsApiInput.value);
         const authToken = syncAuthToken();
+        updateDashboardHint('');
         if (!apiUrl) {
           if (!silent) {
-            alert('请填写 Dashboards 接口');
+            alert('请填写 Dashboards 接口或 Supersonic API Base');
           }
           return [];
         }
@@ -150,19 +217,40 @@
           }
           return [];
         }
+        if (!baseUrl && !/^https?:\/\//i.test(dashboardsApiInput.value.trim())) {
+          if (!silent) {
+            alert('当前为 file:// 环境，请填写 Supersonic API Base');
+          }
+          return [];
+        }
         const resp = await fetch(apiUrl, {
           method: 'POST',
           headers: buildAuthHeaders(authToken),
           body: JSON.stringify({}),
         });
-        const data = await resp.json();
-        if (Array.isArray(data)) {
-          return data;
+        const text = await resp.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch (err) {
+          updateDashboardHint('Dashboard 列表响应不是 JSON，请检查接口。');
+          return [];
         }
-        if (Array.isArray(data?.data)) {
-          return data.data;
+        const code = data?.code;
+        if (code != null && Number(code) !== 200) {
+          const message = data?.msg || data?.message || 'Dashboard 接口返回失败';
+          updateDashboardHint(`加载失败: ${message}`);
+          return [];
         }
-        return [];
+        if (!resp.ok) {
+          updateDashboardHint(`加载失败: ${resp.status} ${resp.statusText}`);
+          return [];
+        }
+        const list = parseResultList(data);
+        if (list.length === 0 && !silent) {
+          updateDashboardHint('未获取到 dashboard，请检查接口响应或权限。');
+        }
+        return list;
       };
 
       const renderDashboards = dashboards => {
@@ -206,7 +294,9 @@
         const authToken = syncAuthToken();
         const supersetDomain = document.getElementById('supersetDomain').value.trim();
         const embeddedId = embeddedIdInput.value.trim();
-        const guestTokenApi = document.getElementById('guestTokenApi').value.trim();
+        const guestTokenApiRaw = document.getElementById('guestTokenApi').value.trim();
+        const baseUrl = resolveSupersonicBaseUrl();
+        const guestTokenApi = buildApiUrl(baseUrl, guestTokenApiRaw);
 
         if (!authToken) {
           alert('auth token 不能为空');
@@ -214,6 +304,10 @@
         }
         if (!supersetDomain || !embeddedId || !guestTokenApi) {
           alert('请填写 Superset 域名、Embedded ID 和 Guest Token 接口');
+          return;
+        }
+        if (!baseUrl && !/^https?:\/\//i.test(guestTokenApiRaw)) {
+          alert('当前为 file:// 环境，请填写 Supersonic API Base');
           return;
         }
 
@@ -239,13 +333,19 @@
       fetchTokenBtn.addEventListener('click', () => {
         const authToken = syncAuthToken();
         const embeddedId = embeddedIdInput.value.trim();
-        const guestTokenApi = document.getElementById('guestTokenApi').value.trim();
+        const guestTokenApiRaw = document.getElementById('guestTokenApi').value.trim();
+        const baseUrl = resolveSupersonicBaseUrl();
+        const guestTokenApi = buildApiUrl(baseUrl, guestTokenApiRaw);
         if (!authToken) {
           alert('auth token 不能为空');
           return;
         }
         if (!embeddedId || !guestTokenApi) {
           alert('请填写 Embedded ID 和 Guest Token 接口');
+          return;
+        }
+        if (!baseUrl && !/^https?:\/\//i.test(guestTokenApiRaw)) {
+          alert('当前为 file:// 环境，请填写 Supersonic API Base');
           return;
         }
         fetchGuestToken(guestTokenApi, embeddedId, authToken).catch(err => {

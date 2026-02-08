@@ -47,6 +47,10 @@ public class SupersetPluginConfig {
 
     private Integer height;
 
+    private Long templateChartId;
+
+    private Map<String, Long> templateChartIds;
+
     private String guestTokenUserUsername = "supersonic-guest";
 
     private String guestTokenUserFirstName = "Supersonic";
