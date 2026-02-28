@@ -351,6 +351,9 @@ importers:
       '@types/react-syntax-highlighter':
         specifier: ^13.5.0
         version: 13.5.2
+      '@superset-ui/embedded-sdk':
+        specifier: ^0.3.0
+        version: 0.3.0
       '@umijs/route-utils':
         specifier: 2.2.2
         version: 2.2.2

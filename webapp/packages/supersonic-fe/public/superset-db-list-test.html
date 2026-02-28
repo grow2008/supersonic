@@ -83,11 +83,21 @@
       </div>
     </div>
     <div class="row">
+      <div>
+        <label>Superset Plugin ID (可选)</label>
+        <input id="pluginId" placeholder="留空使用默认 Superset 插件" />
+      </div>
+    </div>
+    <div class="row">
       <button id="loadBtn">自动登录并读取数据库列表</button>
+      <button id="loadDashboardsBtn">自动登录并读取看板列表</button>
     </div>
     <div class="hint">
       从 localStorage.SUPERSONIC_TOKEN 读取 Supersonic token，调用 /api/chat/superset/jwt-login
       获取 Superset JWT，然后通过 /api/chat/superset/databases 读取数据库列表
+    </div>
+    <div class="hint">
+      看板列表接口: /api/chat/superset/dashboards（支持携带 accessToken / pluginId）
     </div>
     <div id="status"></div>
     <table id="resultTable" style="display: none;">
@@ -103,14 +113,32 @@
     </table>
     <h3>数据库列表原始响应</h3>
     <pre id="raw"></pre>
+    <h3>看板列表</h3>
+    <table id="dashboardTable" style="display: none;">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>title</th>
+          <th>embeddedId</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <h3>看板列表原始响应</h3>
+    <pre id="dashboardRaw"></pre>
 
     <script>
       const supersonicUrlInput = document.getElementById('supersonicUrl');
+      const pluginIdInput = document.getElementById('pluginId');
       const loadBtn = document.getElementById('loadBtn');
+      const loadDashboardsBtn = document.getElementById('loadDashboardsBtn');
       const statusEl = document.getElementById('status');
       const rawEl = document.getElementById('raw');
       const table = document.getElementById('resultTable');
       const tbody = table.querySelector('tbody');
+      const dashboardRawEl = document.getElementById('dashboardRaw');
+      const dashboardTable = document.getElementById('dashboardTable');
+      const dashboardTbody = dashboardTable.querySelector('tbody');
 
       function normalizeBaseUrl(value) {
         const trimmed = (value || '').trim();
@@ -141,6 +169,66 @@
         table.style.display = '';
       }
 
+      function renderDashboardTable(list) {
+        dashboardTbody.innerHTML = '';
+        if (!Array.isArray(list) || list.length === 0) {
+          dashboardTable.style.display = 'none';
+          return;
+        }
+        for (const item of list) {
+          const tr = document.createElement('tr');
+          const id = item.id ?? '';
+          const title = item.title ?? item.dashboard_title ?? '';
+          const embeddedId = item.embeddedId ?? item.embedded_id ?? '';
+          tr.innerHTML = `<td>${id}</td><td>${title}</td><td>${embeddedId}</td>`;
+          dashboardTbody.appendChild(tr);
+        }
+        dashboardTable.style.display = '';
+      }
+
+      function resolvePluginId() {
+        const raw = (pluginIdInput?.value || '').trim();
+        if (!raw) {
+          return null;
+        }
+        const numeric = Number(raw);
+        if (Number.isFinite(numeric) && numeric > 0) {
+          return numeric;
+        }
+        return raw;
+      }
+
+      async function fetchSupersetJwt(supersonicUrl, supersonicToken, errorTarget) {
+        const loginUrl = `${supersonicUrl}/api/chat/superset/jwt-login`;
+        const loginResp = await fetch(loginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${supersonicToken}`,
+          },
+        });
+        const loginText = await loginResp.text();
+        let loginData = null;
+        try {
+          loginData = JSON.parse(loginText);
+        } catch (e) {
+          setStatus('Superset JWT 登录响应不是 JSON', true);
+          if (errorTarget) {
+            errorTarget.textContent = loginText;
+          }
+          throw new Error('jwt login response not json');
+        }
+        const loginPayload = loginData && loginData.data ? loginData.data : loginData;
+        if (!loginResp.ok || !loginPayload || !loginPayload.accessToken) {
+          setStatus('Superset JWT 登录失败，请检查配置', true);
+          if (errorTarget) {
+            errorTarget.textContent = loginText;
+          }
+          throw new Error('jwt login failed');
+        }
+        return loginPayload;
+      }
+
       loadBtn.addEventListener('click', async () => {
         const supersonicUrl = normalizeBaseUrl(
           supersonicUrlInput.value || window.location.origin,
@@ -159,29 +247,7 @@
         rawEl.textContent = '';
         table.style.display = 'none';
         try {
-          const loginUrl = `${supersonicUrl}/api/chat/superset/jwt-login`;
-          const loginResp = await fetch(loginUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${supersonicToken}`,
-            },
-          });
-          const loginText = await loginResp.text();
-          let loginData = null;
-          try {
-            loginData = JSON.parse(loginText);
-          } catch (e) {
-            setStatus('Superset JWT 登录响应不是 JSON', true);
-            rawEl.textContent = loginText;
-            return;
-          }
-          const loginPayload = loginData && loginData.data ? loginData.data : loginData;
-          if (!loginResp.ok || !loginPayload || !loginPayload.accessToken) {
-            setStatus('Superset JWT 登录失败，请检查配置', true);
-            rawEl.textContent = loginText;
-            return;
-          }
+          const loginPayload = await fetchSupersetJwt(supersonicUrl, supersonicToken, rawEl);
           const listUrl = `${supersonicUrl}/api/chat/superset/databases`;
           const resp = await fetch(listUrl, {
             method: 'POST',
@@ -215,6 +281,73 @@
           setStatus(`请求异常: ${err.message || err}`, true);
         } finally {
           loadBtn.disabled = false;
+        }
+      });
+
+      loadDashboardsBtn.addEventListener('click', async () => {
+        const supersonicUrl = normalizeBaseUrl(
+          supersonicUrlInput.value || window.location.origin,
+        );
+        if (!supersonicUrl || supersonicUrl.startsWith('file://')) {
+          setStatus('请填写 Supersonic API Base URL', true);
+          return;
+        }
+        const supersonicToken = localStorage.getItem('SUPERSONIC_TOKEN') || '';
+        if (!supersonicToken) {
+          setStatus('未检测到 SUPERSONIC_TOKEN，请先登录 Supersonic', true);
+          return;
+        }
+        loadDashboardsBtn.disabled = true;
+        setStatus('请求中...', false);
+        dashboardRawEl.textContent = '';
+        dashboardTable.style.display = 'none';
+        try {
+          const loginPayload = await fetchSupersetJwt(
+            supersonicUrl,
+            supersonicToken,
+            dashboardRawEl,
+          );
+          const listUrl = `${supersonicUrl}/api/chat/superset/dashboards`;
+          const pluginId = resolvePluginId();
+          const body = { accessToken: loginPayload.accessToken };
+          if (pluginId) {
+            body.pluginId = pluginId;
+          }
+          const resp = await fetch(listUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${supersonicToken}`,
+            },
+            body: JSON.stringify(body),
+          });
+          const text = await resp.text();
+          dashboardRawEl.textContent = text;
+          if (!resp.ok) {
+            setStatus(`请求失败: ${resp.status} ${resp.statusText}`, true);
+            return;
+          }
+          let data = null;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            setStatus('响应不是 JSON', true);
+            return;
+          }
+          let list = [];
+          if (Array.isArray(data)) {
+            list = data;
+          } else if (data && Array.isArray(data.data)) {
+            list = data.data;
+          } else if (data && Array.isArray(data.result)) {
+            list = data.result;
+          }
+          setStatus(`读取完成，数量: ${Array.isArray(list) ? list.length : 0}`, false);
+          renderDashboardTable(list);
+        } catch (err) {
+          setStatus(`请求异常: ${err.message || err}`, true);
+        } finally {
+          loadDashboardsBtn.disabled = false;
         }
       });
     </script>

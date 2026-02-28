@@ -101,7 +101,7 @@ export default defineConfig({
    * @name layout 插件
    * @doc https://umijs.org/docs/max/layout-menu
    */
-  title: 'Supersonic',
+  title: 'DSI Agentic BI 系统',
   layout: {
     locale: true,
     ...defaultSettings,

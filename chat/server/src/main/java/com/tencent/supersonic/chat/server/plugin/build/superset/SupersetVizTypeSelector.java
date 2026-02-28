@@ -281,8 +281,7 @@ public class SupersetVizTypeSelector {
         return diversified;
     }
 
-    private static String resolveCategoryByVizType(String vizType,
-            List<VizTypeItem> candidates) {
+    private static String resolveCategoryByVizType(String vizType, List<VizTypeItem> candidates) {
         if (StringUtils.isBlank(vizType)) {
             return null;
         }
@@ -296,8 +295,7 @@ public class SupersetVizTypeSelector {
         return resolveCategory(vizType);
     }
 
-    private static String resolveProfileByVizType(String vizType,
-            List<VizTypeItem> candidates) {
+    private static String resolveProfileByVizType(String vizType, List<VizTypeItem> candidates) {
         if (StringUtils.isBlank(vizType)) {
             return null;
         }
@@ -398,8 +396,7 @@ public class SupersetVizTypeSelector {
                 response == null || response.content() == null ? null : response.content().text();
         log.info("superset viztype llm req:\n{} \nresp:\n{}", prompt.text(), answer);
         LlmSelection resolved = resolveLlmSelectionFromModelResponse(answer, candidates);
-        return resolved == null || resolved.getOrdered().isEmpty()
-                ? Optional.empty()
+        return resolved == null || resolved.getOrdered().isEmpty() ? Optional.empty()
                 : Optional.of(resolved);
     }
 
@@ -466,8 +463,7 @@ public class SupersetVizTypeSelector {
 
     static String resolveFromModelResponse(String response, List<VizTypeItem> candidates) {
         LlmSelection resolved = resolveLlmSelectionFromModelResponse(response, candidates);
-        return resolved == null || resolved.getOrdered().isEmpty()
-                ? null
+        return resolved == null || resolved.getOrdered().isEmpty() ? null
                 : resolved.getOrdered().get(0);
     }
 
@@ -868,7 +864,8 @@ public class SupersetVizTypeSelector {
                     && resolved.stream().noneMatch(existing -> StringUtils
                             .equalsIgnoreCase(existing.getVizType(), item.getVizType()))) {
                 VizTypeItem resolvedItem = item;
-                String override = nameOverrides == null ? null : nameOverrides.get(item.getVizType());
+                String override =
+                        nameOverrides == null ? null : nameOverrides.get(item.getVizType());
                 if (StringUtils.isNotBlank(override)) {
                     resolvedItem = cloneItem(item);
                     resolvedItem.setLlmName(override);
@@ -911,6 +908,7 @@ public class SupersetVizTypeSelector {
         }
         return withTable;
     }
+
     public static VizTypeItem resolveItemByVizType(String vizType, List<VizTypeItem> candidates) {
         if (StringUtils.isBlank(vizType)) {
             return null;

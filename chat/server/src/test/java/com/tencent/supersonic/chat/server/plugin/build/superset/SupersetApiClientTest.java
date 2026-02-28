@@ -35,6 +35,11 @@ public class SupersetApiClientTest {
         Map<String, Object> dashboard = new HashMap<>();
         dashboard.put("id", 12L);
         dashboard.put("dashboard_title", "Sales Overview");
+        List<Map<String, Object>> tags = new ArrayList<>();
+        Map<String, Object> tag = new HashMap<>();
+        tag.put("name", "supersonic-manual");
+        tags.add(tag);
+        dashboard.put("tags", tags);
         result.add(dashboard);
         response.put("result", result);
 
@@ -42,6 +47,8 @@ public class SupersetApiClientTest {
         Assertions.assertEquals(1, dashboards.size());
         Assertions.assertEquals(12L, dashboards.get(0).getId());
         Assertions.assertEquals("Sales Overview", dashboards.get(0).getTitle());
+        Assertions.assertEquals(Collections.singletonList("supersonic-manual"),
+                dashboards.get(0).getTags());
     }
 
     @Test
@@ -136,8 +143,7 @@ public class SupersetApiClientTest {
 
         client.listDashboards("token-123");
 
-        Assertions.assertEquals(
-                "http://localhost:8088/api/v1/dashboard/?q=(page:0,page_size:200)",
+        Assertions.assertEquals("http://localhost:8088/api/v1/dashboard/?q=(page:0,page_size:200)",
                 factory.getLastUri().toString());
         Assertions.assertEquals("Bearer token-123",
                 factory.getLastRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION));

@@ -58,7 +58,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     public static final String QUERY_MODE = "SUPERSET";
     private static final int DEFAULT_SINGLE_CHART_HEIGHT = 260;
     private static final int LINE_CHART_HEIGHT = 300;
-    private static final String FORMDATA_LLM_PROMPT = "" + "#Role: You are a Superset formData key fields generator.\n"
+    private static final String FORMDATA_LLM_PROMPT = ""
+            + "#Role: You are a Superset formData key fields generator.\n"
             + "#Task: Given viz_type and dataset metadata, generate key fields for formData.\n"
             + "#Rules:\n"
             + "1. For column/metric fields, ONLY use fields in #Columns and #MetricsCandidates.\n"
@@ -67,12 +68,9 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             + "4. Output fields: query_mode, metrics, metrics_b, metric, secondary_metric, tooltip_metrics, groupby, columns, column, granularity_sqla, x_axis, y_axis,\n"
             + "   source, target, entity, latitude, longitude, start, end, x, y, size, select_country, time_series_option, all_columns, all_columns_x, all_columns_y.\n"
             + "5. Arrays must be JSON arrays; strings must be JSON strings.\n"
-            + "#UserInstruction: {{instruction}}\n"
-            + "#VizType: {{viz_type}}\n"
-            + "#RequiredKeys: {{required_keys}}\n"
-            + "#Columns: {{columns}}\n"
-            + "#MetricsCandidates: {{metrics}}\n"
-            + "#Response:";
+            + "#UserInstruction: {{instruction}}\n" + "#VizType: {{viz_type}}\n"
+            + "#RequiredKeys: {{required_keys}}\n" + "#Columns: {{columns}}\n"
+            + "#MetricsCandidates: {{metrics}}\n" + "#Response:";
 
     @Override
     public boolean accept(ExecuteContext executeContext) {
@@ -97,8 +95,7 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return;
         }
         log.debug("superset process start, queryId={}, queryMode={}",
-                executeContext.getRequest().getQueryId(),
-                queryResult.getQueryMode());
+                executeContext.getRequest().getQueryId(), queryResult.getQueryMode());
         Optional<ChatPlugin> pluginOptional = resolveSupersetPlugin(executeContext);
         if (!pluginOptional.isPresent()) {
             log.debug("superset plugin not found for queryId={}",
@@ -175,7 +172,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             } else {
                 throw new IllegalStateException("superset chart build failed");
             }
-            response.setWebPage(buildWebPage(resolveDashboardHeight(config, response.getVizType())));
+            response.setWebPage(
+                    buildWebPage(resolveDashboardHeight(config, response.getVizType())));
             log.debug(
                     "superset build chart success, pluginId={}, chartId={}, chartUuid={}, guestToken={}",
                     plugin.getId(), response.getChartId(), response.getChartUuid(),
@@ -269,16 +267,15 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return null;
         }
         SemanticParseInfo parseInfo = executeContext.getParseInfo();
-        SupersetDatasetInfo datasetInfo = syncService.registerAndSyncDataset(
-                parseInfo, sql,
-                executeContext.getRequest() == null ? null
-                        : executeContext.getRequest().getUser());
+        SupersetDatasetInfo datasetInfo = syncService.registerAndSyncDataset(parseInfo, sql,
+                executeContext.getRequest() == null ? null : executeContext.getRequest().getUser());
         if (datasetInfo == null) {
             log.debug("superset dataset register failed, dataSetId={}",
                     parseInfo == null ? null : parseInfo.getDataSetId());
             return null;
         }
-        log.debug("superset dataset registered, dataSetId={}, supersetDatasetId={}, databaseId={}, schema={}",
+        log.debug(
+                "superset dataset registered, dataSetId={}, supersetDatasetId={}, databaseId={}, schema={}",
                 parseInfo == null ? null : parseInfo.getDataSetId(), datasetInfo.getId(),
                 datasetInfo.getDatabaseId(), datasetInfo.getSchema());
         return datasetInfo;
@@ -330,8 +327,7 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
 
     private List<SupersetVizTypeSelector.VizTypeItem> ensureFormDataCandidates(
             SupersetPluginConfig config, ExecuteContext executeContext, QueryResult queryResult,
-            SupersetDatasetInfo datasetInfo,
-            List<SupersetVizTypeSelector.VizTypeItem> candidates) {
+            SupersetDatasetInfo datasetInfo, List<SupersetVizTypeSelector.VizTypeItem> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return candidates;
         }
@@ -383,9 +379,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return queryResult;
         }
         List<QueryColumn> parsedColumns = buildColumnsFromParse(parseInfo);
-        List<QueryColumn> resolvedColumns = parsedColumns.isEmpty()
-                ? buildColumnsFromDataset(datasetInfo)
-                : parsedColumns;
+        List<QueryColumn> resolvedColumns =
+                parsedColumns.isEmpty() ? buildColumnsFromDataset(datasetInfo) : parsedColumns;
         if (resolvedColumns.isEmpty()) {
             return queryResult;
         }
@@ -459,10 +454,9 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
                     return;
                 }
                 QueryColumn column = new QueryColumn();
-                column.setName(StringUtils.defaultIfBlank(metric.getName(),
-                        metric.getBizName()));
-                column.setBizName(StringUtils.defaultIfBlank(metric.getBizName(),
-                        metric.getName()));
+                column.setName(StringUtils.defaultIfBlank(metric.getName(), metric.getBizName()));
+                column.setBizName(
+                        StringUtils.defaultIfBlank(metric.getBizName(), metric.getName()));
                 column.setShowType("NUMBER");
                 column.setType("DOUBLE");
                 columns.add(column);
@@ -474,10 +468,10 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
                     return;
                 }
                 QueryColumn column = new QueryColumn();
-                column.setName(StringUtils.defaultIfBlank(dimension.getName(),
-                        dimension.getBizName()));
-                column.setBizName(StringUtils.defaultIfBlank(dimension.getBizName(),
-                        dimension.getName()));
+                column.setName(
+                        StringUtils.defaultIfBlank(dimension.getName(), dimension.getBizName()));
+                column.setBizName(
+                        StringUtils.defaultIfBlank(dimension.getBizName(), dimension.getName()));
                 boolean isTime = SchemaElementType.DATE.equals(dimension.getType())
                         || dimension.isPartitionTime();
                 column.setShowType(isTime ? "DATE" : "CATEGORY");
@@ -546,9 +540,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             String candidateChartName =
                     buildCandidateChartName(chartName, vizType, i, candidate.getLlmName());
             try {
-                Map<String, Object> formData = buildFormData(config,
-                        executeContext.getParseInfo(), queryResult, datasetInfo, vizType,
-                        executeContext.getAgent(),
+                Map<String, Object> formData = buildFormData(config, executeContext.getParseInfo(),
+                        queryResult, datasetInfo, vizType, executeContext.getAgent(),
                         executeContext.getRequest() == null ? null
                                 : executeContext.getRequest().getQueryText());
                 log.debug(
@@ -592,16 +585,14 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         if (results.isEmpty() && !hasTableCandidate) {
             String fallbackVizType = "table";
             try {
-                Map<String, Object> formData = buildFormData(config,
-                        executeContext.getParseInfo(), queryResult, datasetInfo, fallbackVizType,
-                        executeContext.getAgent(),
+                Map<String, Object> formData = buildFormData(config, executeContext.getParseInfo(),
+                        queryResult, datasetInfo, fallbackVizType, executeContext.getAgent(),
                         executeContext.getRequest() == null ? null
                                 : executeContext.getRequest().getQueryText());
-                SupersetChartInfo chartInfo =
-                        client.createEmbeddedChart(sql, chartName, fallbackVizType, formData,
-                                resolvedDatasetId, databaseId, schema, dashboardTags,
-                                resolveDashboardHeight(config, fallbackVizType),
-                                buildDashboardTitle(executeContext, chartName));
+                SupersetChartInfo chartInfo = client.createEmbeddedChart(sql, chartName,
+                        fallbackVizType, formData, resolvedDatasetId, databaseId, schema,
+                        dashboardTags, resolveDashboardHeight(config, fallbackVizType),
+                        buildDashboardTitle(executeContext, chartName));
                 SupersetChartCandidate fallback = new SupersetChartCandidate();
                 fallback.setVizType(fallbackVizType);
                 fallback.setVizName(fallbackVizType);
@@ -646,8 +637,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     /**
      * 构建 Superset 图表的 formData，优先合并插件自定义配置。
      *
-     * Args: config: Superset 插件配置。 parseInfo: 语义解析信息。 queryResult: 查询结果。
-     * datasetInfo: Superset dataset 信息。 vizType: 图表类型。
+     * Args: config: Superset 插件配置。 parseInfo: 语义解析信息。 queryResult: 查询结果。 datasetInfo: Superset
+     * dataset 信息。 vizType: 图表类型。
      *
      * Returns: 合并后的 formData。
      */
@@ -682,8 +673,7 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     /**
      * 基于 dataset 与解析信息生成 Superset formData，确保由 Superset 计算结果。
      *
-     * Args: parseInfo: 语义解析信息。 queryResult: 查询结果。
-     * datasetInfo: Superset dataset 信息。 vizType: 图表类型。
+     * Args: parseInfo: 语义解析信息。 queryResult: 查询结果。 datasetInfo: Superset dataset 信息。 vizType: 图表类型。
      *
      * Returns: 自动生成的 formData。
      */
@@ -778,13 +768,13 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         return formData;
     }
 
-    private void normalizeLlmMetrics(Map<String, Object> formData, SupersetDatasetInfo datasetInfo) {
+    private void normalizeLlmMetrics(Map<String, Object> formData,
+            SupersetDatasetInfo datasetInfo) {
         if (formData == null || datasetInfo == null) {
             return;
         }
         Map<String, SupersetDatasetColumn> columnMap =
-                toColumnMap(datasetInfo.getColumns() == null
-                        ? Collections.emptyList()
+                toColumnMap(datasetInfo.getColumns() == null ? Collections.emptyList()
                         : datasetInfo.getColumns());
         List<String> metricNames = resolveDatasetMetrics(datasetInfo);
         normalizeMetricField(formData, columnMap, metricNames, "metric");
@@ -914,8 +904,7 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         Map<String, Object> variables = new HashMap<>();
         variables.put("instruction", StringUtils.defaultString(queryText));
         variables.put("viz_type", StringUtils.defaultString(vizType));
-        variables.put("required_keys",
-                JsonUtil.toString(resolveRequiredKeys(vizType, profile)));
+        variables.put("required_keys", JsonUtil.toString(resolveRequiredKeys(vizType, profile)));
         variables.put("columns", JsonUtil.toString(resolveDatasetColumns(datasetInfo)));
         variables.put("metrics", JsonUtil.toString(resolveFormDataMetricCandidates(datasetInfo)));
         Prompt prompt = PromptTemplate.from(FORMDATA_LLM_PROMPT).apply(variables);
@@ -1030,8 +1019,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         }
         Set<String> metricNames = resolveFormDataMetricCandidates(datasetInfo).stream()
                 .map(String::valueOf).collect(Collectors.toSet());
-        Set<String> columnNames = resolveDatasetColumns(datasetInfo).stream()
-                .map(String::valueOf).collect(Collectors.toSet());
+        Set<String> columnNames = resolveDatasetColumns(datasetInfo).stream().map(String::valueOf)
+                .collect(Collectors.toSet());
         validateFieldInSet(payload, "metric", metricNames);
         validateFieldInSet(payload, "secondary_metric", metricNames);
         validateFieldListInSet(payload, "metrics", metricNames);
@@ -1059,7 +1048,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     }
 
     private void validateFieldInSet(JSONObject payload, String key, Set<String> allowList) {
-        if (payload == null || StringUtils.isBlank(key) || allowList == null || allowList.isEmpty()) {
+        if (payload == null || StringUtils.isBlank(key) || allowList == null
+                || allowList.isEmpty()) {
             return;
         }
         String value = payload.getString(key);
@@ -1072,7 +1062,8 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     }
 
     private void validateFieldListInSet(JSONObject payload, String key, Set<String> allowList) {
-        if (payload == null || StringUtils.isBlank(key) || allowList == null || allowList.isEmpty()) {
+        if (payload == null || StringUtils.isBlank(key) || allowList == null
+                || allowList.isEmpty()) {
             return;
         }
         Object value = payload.get(key);
@@ -1108,10 +1099,11 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         SupersetVizTypeSelector.VizTypeItem item =
                 SupersetVizTypeSelector.resolveItemByVizType(vizType, null);
         if (item != null && item.getFormDataRules() != null) {
-            List<String> required = item.getFormDataRules().getRequired() == null
-                    ? Collections.emptyList()
-                    : item.getFormDataRules().getRequired().stream()
-                            .filter(StringUtils::isNotBlank).distinct().collect(Collectors.toList());
+            List<String> required =
+                    item.getFormDataRules().getRequired() == null ? Collections.emptyList()
+                            : item.getFormDataRules().getRequired().stream()
+                                    .filter(StringUtils::isNotBlank).distinct()
+                                    .collect(Collectors.toList());
             List<List<String>> anyOf =
                     resolveRequiredAnyOfKeys(item.getFormDataRules().getRequiredAnyOf());
             if (!required.isEmpty() || !anyOf.isEmpty()) {
@@ -2197,8 +2189,7 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     /**
      * 根据 Superset 图表类型和插件配置解析 dashboard 高度。
      *
-     * Args: config: Superset 插件配置。
-     *       vizType: Superset 图表类型。
+     * Args: config: Superset 插件配置。 vizType: Superset 图表类型。
      *
      * Returns: dashboard 高度。
      */

@@ -129,13 +129,18 @@ const ChatItem: React.FC<Props> = ({
     let data: MsgDataType | undefined = undefined;
     const { queryColumns, queryResults, queryState, queryMode, response, chatContext, errorMsg } =
       res.data || {};
+    const exposeError = isDeveloper || isDebugMode;
     setExecuteErrorMsg(errorMsg);
     if (res.code === 400 || res.code === 401 || res.code === 412) {
       tip = res.msg;
     } else if (res.code !== 200) {
-      tip = SEARCH_EXCEPTION_TIP;
+      tip = exposeError ? res.msg || SEARCH_EXCEPTION_TIP : SEARCH_EXCEPTION_TIP;
     } else if (queryState !== 'SUCCESS') {
-      tip = response && typeof response === 'string' ? response : SEARCH_EXCEPTION_TIP;
+      if (exposeError && errorMsg) {
+        tip = errorMsg;
+      } else {
+        tip = response && typeof response === 'string' ? response : SEARCH_EXCEPTION_TIP;
+      }
     } else if (
       (queryColumns && queryColumns.length > 0 && queryResults) ||
       queryMode === 'WEB_PAGE' ||
@@ -220,13 +225,20 @@ const ChatItem: React.FC<Props> = ({
     const { code, data } = parseData || {};
     const { state, selectedParses, candidateParses, queryId, parseTimeCost, errorMsg } = data || {};
     const parses = selectedParses?.concat(candidateParses || []) || [];
+    const exposeError = isDeveloper || isDebugMode;
     if (
       code !== 200 ||
       state === ParseStateEnum.FAILED ||
       !parses.length ||
       (!parses[0]?.properties?.type && !parses[0]?.queryMode)
     ) {
-      setParseTip(state === ParseStateEnum.FAILED && errorMsg ? errorMsg : PARSE_ERROR_TIP);
+      if (exposeError) {
+        setParseTip(
+          (state === ParseStateEnum.FAILED && errorMsg) || parseData?.msg || PARSE_ERROR_TIP
+        );
+      } else {
+        setParseTip(state === ParseStateEnum.FAILED && errorMsg ? errorMsg : PARSE_ERROR_TIP);
+      }
 
       setParseInfo({ queryId } as any);
       return;

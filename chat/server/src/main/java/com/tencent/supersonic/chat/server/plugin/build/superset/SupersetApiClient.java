@@ -102,8 +102,7 @@ public class SupersetApiClient {
         Map<String, Object> mergedFormData = mergeTemplateFormData(formData, template);
         Long chartId = createChart(datasetId, vizType, mergedFormData, chartName);
         String chartUuid = fetchChartUuid(chartId);
-        Long dashboardId = createDashboard(
-                StringUtils.defaultIfBlank(dashboardTitle, chartName));
+        Long dashboardId = createDashboard(StringUtils.defaultIfBlank(dashboardTitle, chartName));
         addChartToDashboard(dashboardId, chartId);
         ensureDashboardChartLinked(dashboardId, chartId);
         updateChartParams(chartId, dashboardId, mergedFormData, vizType, datasetId, template);
@@ -133,6 +132,25 @@ public class SupersetApiClient {
             throw new IllegalArgumentException("superset access token required");
         }
         return listDashboardsInternal(accessToken);
+    }
+
+    public SupersetDashboardInfo createEmptyDashboard(String dashboardTitle, List<String> tags) {
+        Long dashboardId = createDashboard(dashboardTitle, false);
+        addTagsToDashboard(dashboardId, tags);
+        String embeddedId = ensureEmbeddedDashboardUuid(dashboardId);
+        SupersetDashboardInfo info = new SupersetDashboardInfo();
+        info.setId(dashboardId);
+        info.setTitle(StringUtils.defaultIfBlank(dashboardTitle, "supersonic_dashboard").trim());
+        info.setEmbeddedId(embeddedId);
+        info.setTags(tags);
+        return info;
+    }
+
+    public void deleteDashboard(Long dashboardId) {
+        if (dashboardId == null) {
+            throw new IllegalStateException("superset dashboardId missing");
+        }
+        request(HttpMethod.DELETE, DASHBOARD_API + dashboardId, null);
     }
 
     private List<SupersetDashboardInfo> listDashboardsInternal(String accessToken) {
@@ -249,9 +267,8 @@ public class SupersetApiClient {
     }
 
     int resolveDashboardGridHeight(Integer dashboardHeight) {
-        int height =
-                dashboardHeight == null || dashboardHeight <= 0 ? DEFAULT_SINGLE_CHART_HEIGHT
-                        : dashboardHeight;
+        int height = dashboardHeight == null || dashboardHeight <= 0 ? DEFAULT_SINGLE_CHART_HEIGHT
+                : dashboardHeight;
         int gridHeight = Math.round(height / (float) DASHBOARD_GRID_UNIT);
         return Math.max(1, gridHeight);
     }
@@ -311,7 +328,8 @@ public class SupersetApiClient {
         }
         try {
             log.debug("superset chart params update payload, chartId={}, templateId={}, payload={}",
-                    chartId, template == null ? null : template.chartId, JsonUtil.toString(payload));
+                    chartId, template == null ? null : template.chartId,
+                    JsonUtil.toString(payload));
             put(CHART_API + chartId, payload);
         } catch (HttpStatusCodeException ex) {
             log.warn("superset chart params update failed, chartId={}", chartId, ex);
@@ -409,7 +427,8 @@ public class SupersetApiClient {
         query.putIfAbsent("series_limit", 0);
         query.putIfAbsent("group_others_when_limit_reached", false);
         query.putIfAbsent("order_desc", formData.getOrDefault("order_desc", true));
-        query.putIfAbsent("url_params", formData.getOrDefault("url_params", Collections.emptyMap()));
+        query.putIfAbsent("url_params",
+                formData.getOrDefault("url_params", Collections.emptyMap()));
         query.putIfAbsent("custom_params", Collections.emptyMap());
         query.putIfAbsent("custom_form_data", Collections.emptyMap());
         query.putIfAbsent("post_processing", Collections.emptyList());
@@ -624,8 +643,7 @@ public class SupersetApiClient {
             return new HashMap<>((Map<String, Object>) value);
         }
         if (value instanceof String && StringUtils.isNotBlank((String) value)) {
-            Map<String, Object> parsed =
-                    JsonUtil.toObject((String) value, Map.class);
+            Map<String, Object> parsed = JsonUtil.toObject((String) value, Map.class);
             return parsed == null ? null : new HashMap<>(parsed);
         }
         return null;
@@ -638,7 +656,8 @@ public class SupersetApiClient {
         }
         ChartTemplateSnapshot snapshot = fetchChartSnapshot(templateId);
         if (snapshot != null) {
-            log.debug("superset template chart resolved, vizType={}, templateId={}, hasParams={}, "
+            log.debug(
+                    "superset template chart resolved, vizType={}, templateId={}, hasParams={}, "
                             + "hasQueryContext={}",
                     vizType, templateId, snapshot.formData != null, snapshot.queryContext != null);
         }
@@ -756,8 +775,8 @@ public class SupersetApiClient {
                 return;
             }
         }
-        log.warn("superset dashboard chart link not ready, dashboardId={}, chartId={}",
-                dashboardId, chartId);
+        log.warn("superset dashboard chart link not ready, dashboardId={}, chartId={}", dashboardId,
+                chartId);
     }
 
     private boolean isChartLinkedToDashboard(Long dashboardId, Long chartId) {
@@ -775,7 +794,8 @@ public class SupersetApiClient {
             }
         } catch (HttpStatusCodeException ex) {
             if (HttpStatus.NOT_FOUND.equals(ex.getStatusCode())) {
-                log.debug("superset dashboard charts endpoint not found, skip check, dashboardId={}",
+                log.debug(
+                        "superset dashboard charts endpoint not found, skip check, dashboardId={}",
                         dashboardId);
                 return true;
             }
@@ -830,7 +850,8 @@ public class SupersetApiClient {
         mergedFormData.putIfAbsent("viz_type", vizType);
         mergedFormData.putIfAbsent("datasource", datasetId + "__" + getDatasourceType());
         payload.put("params", JsonUtil.toString(mergedFormData));
-        log.debug("superset chart create payload, chartName={}, datasetId={}, vizType={}, payload={}",
+        log.debug(
+                "superset chart create payload, chartName={}, datasetId={}, vizType={}, payload={}",
                 chartName, datasetId, vizType, JsonUtil.toString(payload));
         Map<String, Object> response = post(CHART_API, payload);
         Long chartId = parseLong(resolveValue(response, "id"));
@@ -903,7 +924,12 @@ public class SupersetApiClient {
 
 
     private Long createDashboard(String dashboardTitle) {
-        String title = sanitizeDashboardTitle(dashboardTitle);
+        return createDashboard(dashboardTitle, true);
+    }
+
+    private Long createDashboard(String dashboardTitle, boolean sanitizeTitle) {
+        String title = sanitizeTitle ? sanitizeDashboardTitle(dashboardTitle)
+                : StringUtils.defaultIfBlank(dashboardTitle, "supersonic_dashboard").trim();
         Map<String, Object> payload = new HashMap<>();
         payload.put("dashboard_title", title);
         log.debug("superset dashboard create payload, title={}, payload={}", title,
@@ -1020,7 +1046,7 @@ public class SupersetApiClient {
         return request(HttpMethod.POST, path, body);
     }
 
-    private String sanitizeDashboardTitle(String dashboardTitle) {
+    String sanitizeDashboardTitle(String dashboardTitle) {
         String title = StringUtils.defaultIfBlank(dashboardTitle, "supersonic_dashboard");
         String trimmed = title.trim();
         if (trimmed.startsWith("supersonic_")) {
@@ -1385,6 +1411,31 @@ public class SupersetApiClient {
         return null;
     }
 
+    private List<String> resolveTagNames(Object value) {
+        if (!(value instanceof List)) {
+            return Collections.emptyList();
+        }
+        List<?> raw = (List<?>) value;
+        if (raw.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> tags = new ArrayList<>();
+        for (Object item : raw) {
+            if (item instanceof Map) {
+                String name = resolveString((Map<String, Object>) item, "name");
+                if (StringUtils.isNotBlank(name)) {
+                    tags.add(name.trim());
+                }
+            } else if (item != null) {
+                String name = String.valueOf(item);
+                if (StringUtils.isNotBlank(name)) {
+                    tags.add(name.trim());
+                }
+            }
+        }
+        return tags;
+    }
+
     private List<Map<String, Object>> resolveResultList(Map<String, Object> response) {
         if (response == null) {
             return null;
@@ -1448,6 +1499,10 @@ public class SupersetApiClient {
                 title = resolveString(item, "title");
             }
             info.setTitle(title);
+            Object tagsValue = resolveValue(item, "tags");
+            if (tagsValue != null) {
+                info.setTags(resolveTagNames(tagsValue));
+            }
             if (info.getId() != null || StringUtils.isNotBlank(info.getTitle())) {
                 dashboards.add(info);
             }

@@ -66,6 +66,7 @@
     "@types/numeral": "^2.0.2",
     "@types/react-draft-wysiwyg": "^1.13.2",
     "@types/react-syntax-highlighter": "^13.5.0",
+    "@superset-ui/embedded-sdk": "^0.3.0",
     "@umijs/route-utils": "2.2.2",
     "ace-builds": "^1.4.12",
     "ahooks": "^3.7.7",

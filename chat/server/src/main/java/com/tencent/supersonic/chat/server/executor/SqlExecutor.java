@@ -8,8 +8,8 @@ import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
 import com.tencent.supersonic.chat.server.service.ChatContextService;
 import com.tencent.supersonic.chat.server.service.MemoryService;
 import com.tencent.supersonic.chat.server.util.ResultFormatter;
-import com.tencent.supersonic.common.pojo.Text2SQLExemplar;
 import com.tencent.supersonic.common.pojo.QueryColumn;
+import com.tencent.supersonic.common.pojo.Text2SQLExemplar;
 import com.tencent.supersonic.common.util.ContextUtils;
 import com.tencent.supersonic.common.util.JsonUtil;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
@@ -20,8 +20,8 @@ import com.tencent.supersonic.headless.api.pojo.response.SemanticQueryResp;
 import com.tencent.supersonic.headless.api.pojo.response.SemanticTranslateResp;
 import com.tencent.supersonic.headless.chat.query.llm.s2sql.LLMSqlQuery;
 import com.tencent.supersonic.headless.server.facade.service.SemanticLayerService;
-import lombok.extern.slf4j.Slf4j;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -112,8 +112,7 @@ public class SqlExecutor implements ChatQueryExecutor {
     /**
      * 判断是否需要跳过 Supersonic SQL 执行。
      *
-     * Args: executeContext: 执行上下文。
-     *       parseInfo: 语义解析信息。
+     * Args: executeContext: 执行上下文。 parseInfo: 语义解析信息。
      *
      * Returns: true 表示跳过 SQL 执行。
      */
@@ -125,10 +124,7 @@ public class SqlExecutor implements ChatQueryExecutor {
     /**
      * 构建 Superset 绘图用的占位查询结果。
      *
-     * Args: executeContext: 执行上下文。
-     *       parseInfo: 语义解析信息。
-     *       chatCtx: 对话上下文。
-     *       chatContextService: 对话上下文服务。
+     * Args: executeContext: 执行上下文。 parseInfo: 语义解析信息。 chatCtx: 对话上下文。 chatContextService: 对话上下文服务。
      *
      * Returns: 占位 QueryResult。
      */
@@ -142,8 +138,7 @@ public class SqlExecutor implements ChatQueryExecutor {
         queryResult.setQueryId(executeContext.getRequest().getQueryId());
         queryResult.setChatContext(parseInfo);
         queryResult.setQueryMode(parseInfo.getQueryMode());
-        String translatedSql =
-                resolveTranslatedSql(executeContext, parseInfo, semanticLayer);
+        String translatedSql = resolveTranslatedSql(executeContext, parseInfo, semanticLayer);
         if (StringUtils.isNotBlank(translatedSql)) {
             queryResult.setQuerySql(translatedSql);
             if (parseInfo.getSqlInfo() != null) {
@@ -174,9 +169,8 @@ public class SqlExecutor implements ChatQueryExecutor {
         sqlReq.setDataSetId(parseInfo.getDataSetId());
         try {
             SemanticTranslateResp resp =
-                    semanticLayer.translate(sqlReq,
-                            executeContext.getRequest() == null ? null
-                                    : executeContext.getRequest().getUser());
+                    semanticLayer.translate(sqlReq, executeContext.getRequest() == null ? null
+                            : executeContext.getRequest().getUser());
             if (resp == null || !resp.isOk() || StringUtils.isBlank(resp.getQuerySQL())) {
                 log.warn("superset translate failed, dataSetId={}, ok={}, sqlPresent={}",
                         parseInfo.getDataSetId(), resp != null && resp.isOk(),

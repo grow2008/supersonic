@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
 
 public final class SupersetPluginResolver {
 
-    private SupersetPluginResolver() {
-    }
+    private SupersetPluginResolver() {}
 
     /**
      * 解析执行上下文可用的 Superset 插件。

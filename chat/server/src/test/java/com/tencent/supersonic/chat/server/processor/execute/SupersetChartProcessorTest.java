@@ -1,22 +1,22 @@
 package com.tencent.supersonic.chat.server.processor.execute;
 
-import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginConfig;
 import com.tencent.supersonic.chat.api.pojo.response.QueryResult;
+import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginConfig;
+import com.tencent.supersonic.common.pojo.QueryColumn;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
 import com.tencent.supersonic.headless.api.pojo.SchemaElementType;
 import com.tencent.supersonic.headless.api.pojo.SemanticParseInfo;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetColumn;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetInfo;
 import com.tencent.supersonic.headless.server.sync.superset.SupersetDatasetMetric;
-import com.tencent.supersonic.common.pojo.QueryColumn;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.lang.reflect.Method;
 
 public class SupersetChartProcessorTest {
 
@@ -45,9 +45,8 @@ public class SupersetChartProcessorTest {
         queryResult.setQueryColumns(Arrays.asList(new QueryColumn("id", "INT", "id"),
                 new QueryColumn("name", "STRING", "name")));
 
-        Map<String, Object> formData =
-                processor.buildFormData(config, null, queryResult, datasetInfo, "table", null,
-                        null);
+        Map<String, Object> formData = processor.buildFormData(config, null, queryResult,
+                datasetInfo, "table", null, null);
 
         Assertions.assertEquals("raw", formData.get("query_mode"));
         Assertions.assertEquals(Arrays.asList("id", "name"), formData.get("all_columns"));
@@ -84,13 +83,11 @@ public class SupersetChartProcessorTest {
         parseInfo.getDimensions()
                 .add(SchemaElement.builder().bizName("访 问人数").name("访问人数").build());
         SupersetDatasetInfo datasetInfo = new SupersetDatasetInfo();
-        datasetInfo.setColumns(Collections.singletonList(
-                buildColumn("访问人数", "INT", true, false)));
+        datasetInfo.setColumns(Collections.singletonList(buildColumn("访问人数", "INT", true, false)));
         datasetInfo.setMetrics(Collections.singletonList(buildMetric("count")));
 
         Map<String, Object> formData =
-                processor.buildFormData(config, parseInfo, null, datasetInfo, "table", null,
-                        null);
+                processor.buildFormData(config, parseInfo, null, datasetInfo, "table", null, null);
 
         Assertions.assertEquals(Collections.singletonList("访问人数"), formData.get("groupby"));
     }
@@ -107,9 +104,8 @@ public class SupersetChartProcessorTest {
                 buildColumn("amount", "DECIMAL", false, false),
                 buildColumn("ds", "DATE", false, true)));
 
-        Map<String, Object> formData =
-                processor.buildFormData(config, parseInfo, null, datasetInfo,
-                        "echarts_timeseries_line", null, null);
+        Map<String, Object> formData = processor.buildFormData(config, parseInfo, null, datasetInfo,
+                "echarts_timeseries_line", null, null);
 
         Object metrics = formData.get("metrics");
         Assertions.assertTrue(metrics instanceof List);
@@ -136,9 +132,8 @@ public class SupersetChartProcessorTest {
                 buildColumn("amount", "DECIMAL", false, false)));
         datasetInfo.setMetrics(Collections.singletonList(buildMetric("amount")));
 
-        Assertions.assertThrows(IllegalStateException.class,
-                () -> processor.buildFormData(config, parseInfo, null, datasetInfo, "heatmap_v2",
-                        null, null));
+        Assertions.assertThrows(IllegalStateException.class, () -> processor.buildFormData(config,
+                parseInfo, null, datasetInfo, "heatmap_v2", null, null));
     }
 
     @Test
@@ -190,13 +185,13 @@ public class SupersetChartProcessorTest {
 
         SupersetPluginConfig config = new SupersetPluginConfig();
         config.setHeight(420);
-        Integer configuredHeight = (Integer) method.invoke(processor, config,
-                "echarts_timeseries_line");
+        Integer configuredHeight =
+                (Integer) method.invoke(processor, config, "echarts_timeseries_line");
         Assertions.assertEquals(420, configuredHeight);
 
         SupersetPluginConfig defaultConfig = new SupersetPluginConfig();
-        Integer lineHeight = (Integer) method.invoke(processor, defaultConfig,
-                "echarts_timeseries_line");
+        Integer lineHeight =
+                (Integer) method.invoke(processor, defaultConfig, "echarts_timeseries_line");
         Assertions.assertEquals(300, lineHeight);
 
         Integer defaultHeight = (Integer) method.invoke(processor, defaultConfig, "bar");

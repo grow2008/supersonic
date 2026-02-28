@@ -437,7 +437,7 @@ public class SupersetDatasetRegistryServiceImpl
             filterCount +=
                     parseInfo.getMetricFilters() == null ? 0 : parseInfo.getMetricFilters().size();
         }
-        StringBuilder builder = new StringBuilder("Supersonic 对话生成数据集");
+        StringBuilder builder = new StringBuilder("对话生成数据集");
         if (StringUtils.isNotBlank(sqlHash)) {
             builder.append("，SQL Hash: ").append(sqlHash);
         }

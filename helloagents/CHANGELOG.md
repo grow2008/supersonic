@@ -14,6 +14,10 @@
 - **[docs]**: 合并 Superset 6.0.0 抽取结果到 docs/viztype.json
 - **[chat-server]**: Superset 选图候选尽量覆盖不同类别并附加 table 兜底类型
 - **[chat-server]**: 修复 viztype.json 必填字段解析与候选列表不可变导致的运行时异常
+- **[docs]**: 新增语义层指标体系 JSON 规范与导入/导出说明
+  - 方案: [202602100131_headless-bi-metrics-json](archive/2026-02/202602100131_headless-bi-metrics-json/)
+- **[docs]**: 新增指标体系 JSON 样例 headless_bi_metrics_example.json
+  - 方案: [202602100131_headless-bi-metrics-json](archive/2026-02/202602100131_headless-bi-metrics-json/)
 
 ### 修复
 - **[chat-server]**: 打包后可从 classpath 读取 docs/viztype.json，避免选图退化为 table
@@ -25,6 +29,7 @@
 - **[chat-server]**: Superset 绘图场景恢复执行 SQL 查询用于选图
   - 方案: [202602040217_superset-viztype-candidates](archive/2026-02/202602040217_superset-viztype-candidates/)
 - **[chat-server]**: 单图 dashboard line 类型默认高度提升至 300px，其他类型维持 260px（可用 `s2.superset.height` 覆盖）
+- **[chat-server]**: 放宽 sanitizeDashboardTitle 可见性以支持单元测试复用
 - **[chat-server]**: LLM form_data 校验对齐 viztype.json 必填规则，并支持 tooltip_metrics/secondary_metric/select_country/time_series_option 等关键字段
 - **[chat-server]**: Superset 选图候选优先同类图表（同 profile/分类），减少不相关类型扩散
 - **[chat-server]**: LLM 选图时生成中文图表名，并用于 Superset chart 命名与候选展示
@@ -96,6 +101,9 @@
 - **[webapp-chat-sdk]**: Superset 看板列表为空时仍尝试拉取，确保“推送到看板”可用
   - 类型: 微调（无方案包）
   - 文件: webapp/packages/chat-sdk/src/components/ChatMsg/SupersetChart/index.tsx:367-377; webapp/packages/chat-sdk/src/components/ChatMsg/SupersetChart/index.test.tsx:189-199
+- **[supersonic-fe]**: superset-db-list-test.html 增加看板列表测试入口
+  - 类型: 微调（无方案包）
+  - 文件: webapp/packages/supersonic-fe/public/superset-db-list-test.html:78-245
 
 ## [0.9.10] - 2026-02-03
 
