@@ -1,5 +1,7 @@
 package com.tencent.supersonic.chat.server.processor.parse;
 
+import com.alibaba.fastjson.JSONObject;
+import com.tencent.supersonic.chat.server.agent.Agent;
 import com.tencent.supersonic.chat.server.pojo.ParseContext;
 import com.tencent.supersonic.common.pojo.ChatApp;
 import com.tencent.supersonic.common.pojo.enums.AppModule;
@@ -47,8 +49,29 @@ public class ErrorMsgRewriteProcessor implements ParseResultProcessor {
     @Override
     public boolean accept(ParseContext parseContext) {
         ChatApp chatApp = parseContext.getAgent().getChatAppConfig().get(APP_KEY);
+        // In non-end-user mode (debugMode=true), keep the raw error to help troubleshooting.
+        if (isDebugMode(parseContext.getAgent())) {
+            return false;
+        }
+        if (parseContext.getRequest() != null && parseContext.getRequest().getUser() != null
+                && parseContext.getRequest().getUser().isSuperAdmin()) {
+            return false;
+        }
         return StringUtils.isNotBlank(parseContext.getResponse().getErrorMsg())
                 && Objects.nonNull(chatApp) && chatApp.isEnable();
+    }
+
+    private boolean isDebugMode(Agent agent) {
+        if (agent == null || StringUtils.isBlank(agent.getToolConfig())) {
+            return false;
+        }
+        try {
+            Map<String, Object> map = JSONObject.parseObject(agent.getToolConfig(), Map.class);
+            return map != null && Boolean.TRUE.equals(map.get("debugMode"));
+        } catch (Exception ignored) {
+            // If toolConfig is malformed, fail open (treat as end-user mode) to preserve behavior.
+            return false;
+        }
     }
 
     @Override

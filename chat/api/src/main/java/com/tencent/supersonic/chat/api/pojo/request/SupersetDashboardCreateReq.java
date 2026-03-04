@@ -1,0 +1,11 @@
+package com.tencent.supersonic.chat.api.pojo.request;
+
+import lombok.Data;
+
+@Data
+public class SupersetDashboardCreateReq {
+
+    private Long pluginId;
+
+    private String title;
+}

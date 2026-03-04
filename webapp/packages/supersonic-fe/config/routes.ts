@@ -55,6 +55,20 @@ const ROUTES = [
     envEnableList: [ENV_KEY.CHAT],
   },
   {
+    path: '/supersetDashboard/embed',
+    name: 'supersetDashboardEmbed',
+    component: './SupersetDashboard/Embed',
+    envEnableList: [ENV_KEY.CHAT, ENV_KEY.SEMANTIC],
+    hideInMenu: true,
+    layout: false,
+  },
+  {
+    path: '/supersetDashboard',
+    name: 'supersetDashboard',
+    component: './SupersetDashboard',
+    envEnableList: [ENV_KEY.CHAT, ENV_KEY.SEMANTIC],
+  },
+  {
     path: '/model/metric/edit/:metricId',
     name: 'metricEdit',
     hideInMenu: true,

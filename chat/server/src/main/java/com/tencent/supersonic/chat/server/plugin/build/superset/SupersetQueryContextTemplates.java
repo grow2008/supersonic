@@ -19,15 +19,13 @@ final class SupersetQueryContextTemplates {
 
     static {
         Collections.addAll(TIMESERIES_TYPES, "echarts_timeseries", "echarts_area",
-                "echarts_timeseries_bar", "echarts_timeseries_line",
-                "echarts_timeseries_scatter", "echarts_timeseries_smooth",
-                "echarts_timeseries_step");
+                "echarts_timeseries_bar", "echarts_timeseries_line", "echarts_timeseries_scatter",
+                "echarts_timeseries_smooth", "echarts_timeseries_step");
         Collections.addAll(SIMPLE_SORT_BY_METRIC_TYPES, "pie", "treemap_v2", "sunburst_v2",
                 "funnel", "gauge_chart");
     }
 
-    private SupersetQueryContextTemplates() {
-    }
+    private SupersetQueryContextTemplates() {}
 
     /**
      * 根据 Superset 前端 buildQuery 规则为 query_context 追加 vizType 模板字段。
@@ -179,14 +177,14 @@ final class SupersetQueryContextTemplates {
         for (Map<String, Object> query : queries) {
             List<Object> groupby = toList(formData.get("groupby"));
             List<Object> columns = new ArrayList<>();
-            Object xAxis = firstNonNull(formData.get("x_axis"),
-                    formData.get("granularity_sqla"));
+            Object xAxis = firstNonNull(formData.get("x_axis"), formData.get("granularity_sqla"));
             if (xAxis != null) {
                 columns.add(xAxis);
             }
             columns.addAll(groupby);
             if (!columns.isEmpty()) {
-                query.put("columns", dedupe(columns));
+                List<Object> deduped = dedupe(columns);
+                query.put("columns", applyBaseAxisColumn(deduped, xAxis));
             }
             if (!groupby.isEmpty()) {
                 query.put("series_columns", groupby);
@@ -198,8 +196,8 @@ final class SupersetQueryContextTemplates {
         }
     }
 
-    private static List<Map<String, Object>> applyBigNumberTrendline(
-            Map<String, Object> formData, List<Map<String, Object>> queries) {
+    private static List<Map<String, Object>> applyBigNumberTrendline(Map<String, Object> formData,
+            List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         Object xAxis = firstNonNull(formData.get("x_axis"), formData.get("granularity_sqla"));
         for (Map<String, Object> query : normalized) {
@@ -287,8 +285,8 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applyBubble(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> columns = merge(toList(formData.get("entity")),
-                toList(formData.get("series")));
+        List<Object> columns =
+                merge(toList(formData.get("entity")), toList(formData.get("series")));
         if (columns.isEmpty()) {
             columns = merge(toList(formData.get("x")), toList(formData.get("y")));
         }
@@ -303,10 +301,10 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applyGraph(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> columns = merge(
-                merge(toList(formData.get("source")), toList(formData.get("target"))),
-                merge(toList(formData.get("source_category")),
-                        toList(formData.get("target_category"))));
+        List<Object> columns =
+                merge(merge(toList(formData.get("source")), toList(formData.get("target"))),
+                        merge(toList(formData.get("source_category")),
+                                toList(formData.get("target_category"))));
         for (Map<String, Object> query : normalized) {
             if (!columns.isEmpty()) {
                 query.put("columns", dedupe(columns));
@@ -318,9 +316,9 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applyTree(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> columns = merge(
-                merge(toList(formData.get("id")), toList(formData.get("parent"))),
-                toList(formData.get("name")));
+        List<Object> columns =
+                merge(merge(toList(formData.get("id")), toList(formData.get("parent"))),
+                        toList(formData.get("name")));
         for (Map<String, Object> query : normalized) {
             if (!columns.isEmpty()) {
                 query.put("columns", dedupe(columns));
@@ -332,8 +330,8 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applySankey(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> groupby = merge(toList(formData.get("source")),
-                toList(formData.get("target")));
+        List<Object> groupby =
+                merge(toList(formData.get("source")), toList(formData.get("target")));
         for (Map<String, Object> query : normalized) {
             if (!groupby.isEmpty()) {
                 query.put("groupby", groupby);
@@ -346,8 +344,9 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applyWaterfall(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> columns = merge(toList(firstNonNull(formData.get("x_axis"),
-                formData.get("granularity_sqla"))), toList(formData.get("groupby")));
+        List<Object> columns = merge(
+                toList(firstNonNull(formData.get("x_axis"), formData.get("granularity_sqla"))),
+                toList(formData.get("groupby")));
         List<Object> orderby = new ArrayList<>();
         for (Object column : columns) {
             List<Object> order = new ArrayList<>();
@@ -403,8 +402,8 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applyPivotTable(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> columns = merge(toList(formData.get("groupbyColumns")),
-                toList(formData.get("groupbyRows")));
+        List<Object> columns =
+                merge(toList(formData.get("groupbyColumns")), toList(formData.get("groupbyRows")));
         for (Map<String, Object> query : normalized) {
             if (!columns.isEmpty()) {
                 query.put("columns", dedupe(columns));
@@ -470,8 +469,8 @@ final class SupersetQueryContextTemplates {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         List<Object> columns = collectValues(formData, "groupby");
         List<Object> metrics = collectValues(formData, "metrics", "metric");
-        Object orderMetric = resolveOrderMetric(formData, "timeseries_limit_metric", "metrics",
-                "metric");
+        Object orderMetric =
+                resolveOrderMetric(formData, "timeseries_limit_metric", "metrics", "metric");
         boolean orderDesc = resolveOrderDesc(formData);
         for (Map<String, Object> query : normalized) {
             mergeQueryList(query, "columns", columns);
@@ -486,8 +485,8 @@ final class SupersetQueryContextTemplates {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         List<Object> columns = collectValues(formData, "groupby");
         List<Object> metrics = collectValues(formData, "metrics", "metric");
-        Object orderMetric = resolveOrderMetric(formData, "timeseries_limit_metric", "metrics",
-                "metric");
+        Object orderMetric =
+                resolveOrderMetric(formData, "timeseries_limit_metric", "metrics", "metric");
         boolean orderDesc = resolveOrderDesc(formData);
         for (Map<String, Object> query : normalized) {
             mergeQueryList(query, "columns", columns);
@@ -554,8 +553,7 @@ final class SupersetQueryContextTemplates {
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         List<Object> columns = collectValues(formData, "entity");
-        List<Object> metrics =
-                collectValues(formData, "metric", "metrics", "secondary_metric");
+        List<Object> metrics = collectValues(formData, "metric", "metrics", "secondary_metric");
         for (Map<String, Object> query : normalized) {
             mergeQueryList(query, "columns", columns);
             mergeQueryList(query, "metrics", metrics);
@@ -573,8 +571,7 @@ final class SupersetQueryContextTemplates {
     private static List<Map<String, Object>> applyMapbox(Map<String, Object> formData,
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
-        List<Object> columns =
-                collectValues(formData, "all_columns_x", "all_columns_y", "groupby");
+        List<Object> columns = collectValues(formData, "all_columns_x", "all_columns_y", "groupby");
         for (Map<String, Object> query : normalized) {
             mergeQueryList(query, "columns", columns);
         }
@@ -586,8 +583,8 @@ final class SupersetQueryContextTemplates {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         List<Object> columns = collectValues(formData, "groupby");
         List<Object> metrics = collectValues(formData, "metrics", "metric");
-        Object orderMetric = resolveOrderMetric(formData, "timeseries_limit_metric", "metrics",
-                "metric");
+        Object orderMetric =
+                resolveOrderMetric(formData, "timeseries_limit_metric", "metrics", "metric");
         boolean orderDesc = resolveOrderDesc(formData);
         for (Map<String, Object> query : normalized) {
             mergeQueryList(query, "columns", columns);
@@ -603,8 +600,8 @@ final class SupersetQueryContextTemplates {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         List<Object> columns = collectValues(formData, "groupby");
         List<Object> metrics = collectValues(formData, "metrics", "metric");
-        Object orderMetric = resolveOrderMetric(formData, "timeseries_limit_metric", "metrics",
-                "metric");
+        Object orderMetric =
+                resolveOrderMetric(formData, "timeseries_limit_metric", "metrics", "metric");
         boolean orderDesc = resolveOrderDesc(formData);
         for (Map<String, Object> query : normalized) {
             mergeQueryList(query, "columns", columns);
@@ -619,8 +616,7 @@ final class SupersetQueryContextTemplates {
             List<Map<String, Object>> queries) {
         List<Map<String, Object>> normalized = ensureQueries(queries);
         List<Object> columns = collectValues(formData, "series");
-        List<Object> metrics =
-                collectValues(formData, "metrics", "metric", "secondary_metric");
+        List<Object> metrics = collectValues(formData, "metrics", "metric", "secondary_metric");
         Object orderMetric = resolveOrderMetric(formData, "timeseries_limit_metric", "metrics",
                 "metric", "secondary_metric");
         boolean orderDesc = resolveOrderDesc(formData);
@@ -760,8 +756,7 @@ final class SupersetQueryContextTemplates {
         return dedupe(values);
     }
 
-    private static void mergeQueryList(Map<String, Object> query, String key,
-            List<Object> values) {
+    private static void mergeQueryList(Map<String, Object> query, String key, List<Object> values) {
         if (query == null || values == null || values.isEmpty()) {
             return;
         }
@@ -860,5 +855,34 @@ final class SupersetQueryContextTemplates {
             return "";
         }
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static List<Object> applyBaseAxisColumn(List<Object> columns, Object xAxis) {
+        if (xAxis == null || columns == null || columns.isEmpty()) {
+            return columns;
+        }
+        if (!(xAxis instanceof String)) {
+            return columns;
+        }
+        String axis = (String) xAxis;
+        List<Object> updated = new ArrayList<>();
+        for (Object column : columns) {
+            if (axis.equals(column)) {
+                updated.add(buildBaseAxisColumn(axis));
+            } else {
+                updated.add(column);
+            }
+        }
+        return updated;
+    }
+
+    private static Map<String, Object> buildBaseAxisColumn(String axis) {
+        Map<String, Object> column = new HashMap<>();
+        column.put("columnType", "BASE_AXIS");
+        column.put("sqlExpression", axis);
+        column.put("label", axis);
+        column.put("expressionType", "SQL");
+        column.put("isColumnReference", true);
+        return column;
     }
 }

@@ -23,4 +23,5 @@ export default {
   'menu.chat': '问答对话',
   'menu.agent': '助理管理',
   'menu.message': '消息管理',
+  'menu.supersetDashboard': 'Superset看板管理',
 };

@@ -2,6 +2,8 @@ package com.tencent.supersonic.chat.server.plugin.build.superset;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class SupersetDashboardInfo {
 
@@ -10,4 +12,10 @@ public class SupersetDashboardInfo {
     private String title;
 
     private String embeddedId;
+
+    private List<String> tags;
+
+    private String supersetDomain;
+
+    private String editUrl;
 }

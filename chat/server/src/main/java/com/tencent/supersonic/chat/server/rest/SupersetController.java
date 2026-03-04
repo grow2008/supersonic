@@ -1,5 +1,8 @@
 package com.tencent.supersonic.chat.server.rest;
 
+import com.tencent.supersonic.auth.api.authentication.utils.UserHolder;
+import com.tencent.supersonic.chat.api.pojo.request.SupersetDashboardCreateReq;
+import com.tencent.supersonic.chat.api.pojo.request.SupersetDashboardDeleteReq;
 import com.tencent.supersonic.chat.api.pojo.request.SupersetDashboardListReq;
 import com.tencent.supersonic.chat.api.pojo.request.SupersetDashboardPushReq;
 import com.tencent.supersonic.chat.api.pojo.request.SupersetGuestTokenReq;
@@ -7,11 +10,15 @@ import com.tencent.supersonic.chat.api.pojo.response.SupersetGuestTokenResp;
 import com.tencent.supersonic.chat.server.plugin.ChatPlugin;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetApiClient;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetDashboardInfo;
+import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetDashboardTagHelper;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginConfig;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginProperties;
 import com.tencent.supersonic.chat.server.service.PluginService;
+import com.tencent.supersonic.common.pojo.User;
 import com.tencent.supersonic.common.pojo.exception.InvalidArgumentException;
 import com.tencent.supersonic.common.util.JsonUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping({"/api/chat/superset", "/openapi/chat/superset"})
@@ -45,6 +53,73 @@ public class SupersetController {
             return client.listDashboards(accessToken);
         }
         return client.listDashboards();
+    }
+
+    @PostMapping("dashboards/manage")
+    public Map<String, Object> manualDashboards(
+            @RequestBody(required = false) SupersetDashboardListReq req,
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
+        User user = UserHolder.findUser(httpServletRequest, httpServletResponse);
+        ChatPlugin plugin = resolveSupersetPlugin(req == null ? null : req.getPluginId());
+        String accessToken = req == null ? null : req.getAccessToken();
+        SupersetPluginConfig config = buildConfig(plugin, StringUtils.isNotBlank(accessToken));
+        SupersetApiClient client = new SupersetApiClient(config);
+        List<SupersetDashboardInfo> dashboards =
+                StringUtils.isNotBlank(accessToken) ? client.listDashboards(accessToken)
+                        : client.listDashboards();
+        List<SupersetDashboardInfo> filtered = filterManualDashboards(dashboards, user);
+        String supersetDomain = normalizeBaseUrl(config.getBaseUrl());
+        for (SupersetDashboardInfo dashboard : filtered) {
+            dashboard.setSupersetDomain(supersetDomain);
+            dashboard.setEditUrl(buildDashboardEditUrl(supersetDomain, dashboard.getId()));
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("pluginId", plugin.getId());
+        response.put("supersetDomain", supersetDomain);
+        response.put("dashboards", filtered);
+        return response;
+    }
+
+    @PostMapping("dashboard/create")
+    public SupersetDashboardInfo createDashboard(@RequestBody SupersetDashboardCreateReq req,
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
+        if (req == null || StringUtils.isBlank(req.getTitle())) {
+            throw new InvalidArgumentException("dashboard title required");
+        }
+        User user = UserHolder.findUser(httpServletRequest, httpServletResponse);
+        ChatPlugin plugin = resolveSupersetPlugin(req.getPluginId());
+        SupersetPluginConfig config = buildConfig(plugin);
+        SupersetApiClient client = new SupersetApiClient(config);
+        List<String> tags = SupersetDashboardTagHelper.buildManualTags(user);
+        SupersetDashboardInfo info = client.createEmptyDashboard(req.getTitle(), tags);
+        String supersetDomain = normalizeBaseUrl(config.getBaseUrl());
+        info.setSupersetDomain(supersetDomain);
+        info.setEditUrl(buildDashboardEditUrl(supersetDomain, info.getId()));
+        return info;
+    }
+
+    @PostMapping("dashboard/delete")
+    public boolean deleteDashboard(@RequestBody SupersetDashboardDeleteReq req,
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
+        if (req == null || req.getDashboardId() == null) {
+            throw new InvalidArgumentException("dashboardId required");
+        }
+        User user = UserHolder.findUser(httpServletRequest, httpServletResponse);
+        ChatPlugin plugin = resolveSupersetPlugin(req.getPluginId());
+        SupersetApiClient client = new SupersetApiClient(buildConfig(plugin));
+        SupersetDashboardInfo dashboard = resolveDashboard(client, req.getDashboardId());
+        if (dashboard == null) {
+            throw new InvalidArgumentException("dashboard not found");
+        }
+        if (!SupersetDashboardTagHelper.isManualDashboard(dashboard)) {
+            throw new InvalidArgumentException("dashboard not managed");
+        }
+        if (user == null
+                || (!user.isSuperAdmin() && !SupersetDashboardTagHelper.isOwner(user, dashboard))) {
+            throw new InvalidArgumentException("dashboard permission denied");
+        }
+        client.deleteDashboard(req.getDashboardId());
+        return true;
     }
 
     @PostMapping("dashboard/push")
@@ -189,5 +264,42 @@ public class SupersetController {
             throw new InvalidArgumentException("superset access token required");
         }
         return accessToken;
+    }
+
+    private List<SupersetDashboardInfo> filterManualDashboards(
+            List<SupersetDashboardInfo> dashboards, User user) {
+        if (dashboards == null || dashboards.isEmpty() || user == null) {
+            return java.util.Collections.emptyList();
+        }
+        return dashboards.stream().filter(SupersetDashboardTagHelper::isManualDashboard)
+                .filter(dashboard -> user.isSuperAdmin()
+                        || SupersetDashboardTagHelper.isOwner(user, dashboard))
+                .collect(Collectors.toList());
+    }
+
+    private SupersetDashboardInfo resolveDashboard(SupersetApiClient client, Long dashboardId) {
+        if (client == null || dashboardId == null) {
+            return null;
+        }
+        List<SupersetDashboardInfo> dashboards = client.listDashboards();
+        if (dashboards == null || dashboards.isEmpty()) {
+            return null;
+        }
+        return dashboards.stream().filter(dashboard -> dashboardId.equals(dashboard.getId()))
+                .findFirst().orElse(null);
+    }
+
+    private String normalizeBaseUrl(String baseUrl) {
+        if (StringUtils.isBlank(baseUrl)) {
+            return null;
+        }
+        return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    }
+
+    private String buildDashboardEditUrl(String supersetDomain, Long dashboardId) {
+        if (StringUtils.isBlank(supersetDomain) || dashboardId == null) {
+            return null;
+        }
+        return String.format("%s/superset/dashboard/%s/?edit=true", supersetDomain, dashboardId);
     }
 }
