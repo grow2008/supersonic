@@ -23,6 +23,7 @@ export type PluginConfigType = {
 export enum PluginTypeEnum {
   WEB_PAGE = 'WEB_PAGE',
   WEB_SERVICE = 'WEB_SERVICE',
+  AGENT_SERVICE = 'AGENT_SERVICE',
   SUPERSET = 'SUPERSET',
   NL2SQL_LLM = 'NL2SQL_LLM',
 }

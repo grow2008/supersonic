@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class PluginManager {
+
+    private static final String AGENT_SERVICE_TYPE = "AGENT_SERVICE";
 
     @Autowired
     private EmbeddingConfig embeddingConfig;
@@ -74,6 +77,21 @@ public class PluginManager {
         return plugins;
     }
 
+    public static boolean hasAgentServicePlugin(ParseContext parseContext) {
+        return getAgentServicePlugin(parseContext) != null;
+    }
+
+    public static ChatPlugin getAgentServicePlugin(ParseContext parseContext) {
+        List<ChatPlugin> plugins = getPluginAgentCanSupport(parseContext);
+        if (CollectionUtils.isEmpty(plugins)) {
+            return null;
+        }
+        return plugins
+                .stream().filter(PluginManager::isAgentServicePlugin).sorted(Comparator
+                        .comparing(ChatPlugin::getId, Comparator.nullsLast(Long::compareTo)))
+                .findFirst().orElse(null);
+    }
+
     private static List<PluginTool> getPluginTools(Agent agent) {
         if (agent == null) {
             return Lists.newArrayList();
@@ -89,7 +107,7 @@ public class PluginManager {
     @EventListener
     public void addPlugin(PluginAddEvent pluginAddEvent) {
         ChatPlugin plugin = pluginAddEvent.getPlugin();
-        if (CollectionUtils.isNotEmpty(plugin.getExampleQuestionList())) {
+        if (shouldIndexEmbedding(plugin)) {
             requestEmbeddingPluginAdd(convert(Lists.newArrayList(plugin)));
         }
     }
@@ -98,10 +116,10 @@ public class PluginManager {
     public void updatePlugin(PluginUpdateEvent pluginUpdateEvent) {
         ChatPlugin oldPlugin = pluginUpdateEvent.getOldPlugin();
         ChatPlugin newPlugin = pluginUpdateEvent.getNewPlugin();
-        if (CollectionUtils.isNotEmpty(oldPlugin.getExampleQuestionList())) {
+        if (shouldIndexEmbedding(oldPlugin)) {
             requestEmbeddingPluginDelete(getEmbeddingId(Lists.newArrayList(oldPlugin)));
         }
-        if (CollectionUtils.isNotEmpty(newPlugin.getExampleQuestionList())) {
+        if (shouldIndexEmbedding(newPlugin)) {
             requestEmbeddingPluginAdd(convert(Lists.newArrayList(newPlugin)));
         }
     }
@@ -109,7 +127,7 @@ public class PluginManager {
     @EventListener
     public void delPlugin(PluginDelEvent pluginDelEvent) {
         ChatPlugin plugin = pluginDelEvent.getPlugin();
-        if (CollectionUtils.isNotEmpty(plugin.getExampleQuestionList())) {
+        if (shouldIndexEmbedding(plugin)) {
             requestEmbeddingPluginDelete(getEmbeddingId(Lists.newArrayList(plugin)));
         }
     }
@@ -278,5 +296,14 @@ public class PluginManager {
             }
         }
         return pluginMatchedDataSet;
+    }
+
+    private static boolean isAgentServicePlugin(ChatPlugin plugin) {
+        return plugin != null && AGENT_SERVICE_TYPE.equalsIgnoreCase(plugin.getType());
+    }
+
+    private static boolean shouldIndexEmbedding(ChatPlugin plugin) {
+        return !isAgentServicePlugin(plugin)
+                && CollectionUtils.isNotEmpty(plugin.getExampleQuestionList());
     }
 }

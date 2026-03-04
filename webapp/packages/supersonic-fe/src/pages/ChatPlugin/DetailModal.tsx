@@ -388,12 +388,15 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
           </div>
         </FormItem>
         {(pluginType === PluginTypeEnum.WEB_PAGE ||
+          pluginType === PluginTypeEnum.WEB_SERVICE ||
+          pluginType === PluginTypeEnum.AGENT_SERVICE) && (
+          <FormItem name="url" label="地址" rules={[{ required: true, message: '请输入地址' }]}>
+            <Input placeholder="请输入地址" allowClear />
+          </FormItem>
+        )}
+        {(pluginType === PluginTypeEnum.WEB_PAGE ||
           pluginType === PluginTypeEnum.WEB_SERVICE) && (
-          <>
-            <FormItem name="url" label="地址" rules={[{ required: true, message: '请输入地址' }]}>
-              <Input placeholder="请输入地址" allowClear />
-            </FormItem>
-            <FormItem name="params" label="函数参数">
+          <FormItem name="params" label="函数参数">
               <div className={styles.paramsSection}>
                 {filters.map((filter: any) => {
                   return (
@@ -495,7 +498,6 @@ const DetailModal: React.FC<Props> = ({ detail, onSubmit, onCancel }) => {
                 </Button>
               </div>
             </FormItem>
-          </>
         )}
         {pluginType === PluginTypeEnum.SUPERSET && (
           <>

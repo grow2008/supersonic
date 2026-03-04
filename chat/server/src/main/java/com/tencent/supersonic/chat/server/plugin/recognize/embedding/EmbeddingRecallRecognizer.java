@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 public class EmbeddingRecallRecognizer extends PluginRecognizer {
 
     public boolean checkPreCondition(ParseContext parseContext) {
+        if (PluginManager.hasAgentServicePlugin(parseContext)) {
+            return false;
+        }
         List<ChatPlugin> plugins = getPluginList(parseContext);
         return !CollectionUtils.isEmpty(plugins);
     }

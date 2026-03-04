@@ -66,6 +66,7 @@ com.tencent.supersonic.chat.server.executor.ChatQueryExecutor=\
     com.tencent.supersonic.chat.server.executor.PlainTextExecutor
 
 com.tencent.supersonic.chat.server.plugin.recognize.PluginRecognizer=\
+    com.tencent.supersonic.chat.server.plugin.recognize.agentservice.AgentServiceRecognizer, \
     com.tencent.supersonic.chat.server.plugin.recognize.embedding.EmbeddingRecallRecognizer
 
 com.tencent.supersonic.chat.server.processor.parse.ParseResultProcessor=\

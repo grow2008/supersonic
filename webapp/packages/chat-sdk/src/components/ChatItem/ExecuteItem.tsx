@@ -48,7 +48,12 @@ const ExecuteItem: React.FC<Props> = ({
   const [showMsgContentTable, setShowMsgContentTable] = useState<boolean>(false);
   const [msgContentType, setMsgContentType] = useState<MsgContentTypeEnum>();
   const [showErrMsg, setShowErrMsg] = useState<boolean>(false);
-  const titlePrefix = queryMode === 'PLAIN_TEXT' || queryMode === 'WEB_SERVICE' ? '问答' : '数据';
+  const titlePrefix =
+    queryMode === 'AGENT_SERVICE'
+      ? 'Agent 回复'
+      : queryMode === 'PLAIN_TEXT' || queryMode === 'WEB_SERVICE'
+        ? '问答'
+        : '数据';
   const supersetResponse = data?.response as SupersetChartResponseType | undefined;
   const canRenderSuperset =
     data?.queryMode === 'SUPERSET' &&
@@ -164,7 +169,9 @@ const ExecuteItem: React.FC<Props> = ({
 
           {renderCustomExecuteNode && executeItemNode ? (
             executeItemNode
-          ) : data?.queryMode === 'PLAIN_TEXT' || data?.queryMode === 'WEB_SERVICE' ? (
+          ) : data?.queryMode === 'PLAIN_TEXT' ||
+            data?.queryMode === 'WEB_SERVICE' ||
+            data?.queryMode === 'AGENT_SERVICE' ? (
             data?.textResult
           ) : canRenderSuperset ? (
             <SupersetChart
