@@ -285,7 +285,7 @@
                     <skip>${spotless.skip}</skip>
                     <java>
                         <eclipse>
-                            <file>java-formatter.xml</file>
+                            <file>${maven.multiModuleProjectDirectory}/java-formatter.xml</file>
                         </eclipse>
                         <importOrder>
                             <order>javax,java,scala,\#</order>

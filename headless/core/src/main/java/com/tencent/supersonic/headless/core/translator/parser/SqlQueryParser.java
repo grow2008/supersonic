@@ -45,7 +45,19 @@ public class SqlQueryParser implements QueryParser {
     public void parse(QueryStatement queryStatement) throws Exception {
         // build ontologyQuery
         SqlQuery sqlQuery = queryStatement.getSqlQuery();
-        List<String> queryFields = SqlSelectHelper.getAllSelectFields(sqlQuery.getSql());
+        // Build ontology query based on all semantic fields referenced by the SQL (SELECT / WHERE /
+        // GROUP BY).
+        // Note: historically we only used SELECT fields, which can miss filter-only dimensions
+        // (e.g. partition time),
+        // leading to unreplaced bizName leaking into physical SQL (column does not exist).
+        List<String> selectFields = SqlSelectHelper.getAllSelectFields(sqlQuery.getSql());
+        Set<String> allFields = new LinkedHashSet<>();
+        if (selectFields != null) {
+            allFields.addAll(selectFields);
+        }
+        allFields.addAll(SqlSelectHelper.getWhereFields(sqlQuery.getSql()));
+        allFields.addAll(SqlSelectHelper.getGroupByFields(sqlQuery.getSql()));
+        List<String> queryFields = new ArrayList<>(allFields);
         Set<String> queryAliases = SqlSelectHelper.getAliasFields(sqlQuery.getSql());
         List<Pair<String, String>> ontologyMetricsDimensionsAndBizName =
                 Collections.synchronizedList(new ArrayList<>());
@@ -66,7 +78,7 @@ public class SqlQueryParser implements QueryParser {
             ontologyQuery.getDimensions().forEach(d -> semanticFields.add(d.getName()));
             String errMsg =
                     String.format("Querying columns[%s] not matched with semantic fields[%s].",
-                            queryFields, semanticFields);
+                            selectFields, semanticFields);
             queryStatement.setErrMsg(errMsg);
             queryStatement.setStatus(QueryState.INVALID);
             return;

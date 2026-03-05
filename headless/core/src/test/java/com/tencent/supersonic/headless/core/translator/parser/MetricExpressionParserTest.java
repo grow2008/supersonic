@@ -65,6 +65,28 @@ public class MetricExpressionParserTest {
     }
 
     @Test
+    public void testMeasureDefineFallsBackToAliasWhenExprMissing() throws Exception {
+        MetricExpressionParser parser = new MetricExpressionParser();
+        Map<String, Measure> measures = new HashMap<>();
+
+        Measure salesAmount = new Measure();
+        salesAmount.setBizName("fact_internet_sales_sales_amount");
+        salesAmount.setExpr("");
+        salesAmount.setAlias("sales_amount");
+        salesAmount.setAgg("SUM");
+        measures.put(salesAmount.getBizName(), salesAmount);
+        measures.put(salesAmount.getBizName().toLowerCase(Locale.ROOT), salesAmount);
+
+        String expr = invokeBuildFieldExpr(parser, List.of(), measures,
+                "fact_internet_sales_sales_amount", MetricDefineType.MEASURE);
+
+        Assert.assertTrue(expr.contains("sales_amount"),
+                "Expected alias to be used as physical column when expr is missing");
+        Assert.assertFalse(expr.contains("fact_internet_sales_sales_amount"),
+                "Measure bizName should not leak into final expr when alias is present");
+    }
+
+    @Test
     public void testMetricDefineRecursivelyExpandsToPhysicalExpr() throws Exception {
         MetricExpressionParser parser = new MetricExpressionParser();
         Map<String, Measure> measures = buildMeasures();
