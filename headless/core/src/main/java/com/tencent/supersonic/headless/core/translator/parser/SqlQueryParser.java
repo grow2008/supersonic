@@ -46,8 +46,6 @@ public class SqlQueryParser implements QueryParser {
         // build ontologyQuery
         SqlQuery sqlQuery = queryStatement.getSqlQuery();
         List<String> queryFields = SqlSelectHelper.getAllSelectFields(sqlQuery.getSql());
-        Set<String> queryAliases = SqlSelectHelper.getAliasFields(sqlQuery.getSql());
-        queryFields.removeAll(queryAliases);
         Ontology ontology = queryStatement.getOntology();
         OntologyQuery ontologyQuery = buildOntologyQuery(ontology, queryFields);
         // check if there are fields not matched with any metric or dimension
@@ -164,6 +162,7 @@ public class SqlQueryParser implements QueryParser {
         log.debug("dataSetId:{},convert name to bizName before:{}", queryStatement.getDataSetId(),
                 sql);
         sql = SqlReplaceHelper.replaceFields(sql, fieldNameToBizNameMap, true);
+        sql = SqlReplaceHelper.replaceAliasFieldName(sql, fieldNameToBizNameMap);
         log.debug("dataSetId:{},convert name to bizName after:{}", queryStatement.getDataSetId(),
                 sql);
         sql = SqlReplaceHelper.replaceTable(sql,
