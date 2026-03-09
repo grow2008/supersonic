@@ -1,0 +1,176 @@
+{
+    "viz_type": "horizon",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为horizon",
+                "data_type": "string",
+                "sample_data": "horizon",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识，格式为{数据源ID}__{数据源类型}",
+                "data_type": "string",
+                "sample_data": "50__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "contribution",
+                "description": "Contribution",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "granularity_sqla",
+                "description": "Time Column",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "groupby",
+                "description": "Dimensions",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[string]",
+                "sample_data": null
+            },
+            {
+                "field_name": "horizon_color_scale",
+                "description": "Value Domain",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "limit",
+                "description": "Series limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metrics",
+                "description": "地平线图数值指标列表",
+                "data_type": "array[string]",
+                "sample_data": [
+                    "求和(服务器负载)"
+                ],
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "row_limit",
+                "description": "数据行数限制",
+                "data_type": "number",
+                "sample_data": 8760,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "series_height",
+                "description": "Series Height",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "time_range",
+                "description": "Time Range",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "timeseries_limit_metric",
+                "description": "Sort query by",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "2025年全年",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表（临时叠加）",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "服务器组",
+                        "op": "等于",
+                        "val": "核心组"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "展示层级": 3
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID（保存后自动生成）",
+                "data_type": "number",
+                "sample_data": 11001,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID（每次渲染自动生成）",
+                "data_type": "string",
+                "sample_data": "查询-11001",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端页面临时存储的非核心配置",
+                "data_type": "object",
+                "sample_data": {
+                    "配色方案": "blue-red",
+                    "是否显示网格线": true
+                },
+                "supplementary_info": "仅前端使用，后端不处理",
+                "required": false
+            }
+        ]
+    }
+}

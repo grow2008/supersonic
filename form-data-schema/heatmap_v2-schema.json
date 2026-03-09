@@ -1,0 +1,284 @@
+{
+    "viz_type": "heatmap_v2",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型",
+                "data_type": "string",
+                "sample_data": "heatmap_v2",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源",
+                "data_type": "string",
+                "sample_data": "48__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "border_color",
+                "description": "Border color",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "border_width",
+                "description": "Border width",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "bottom_margin",
+                "description": "Bottom Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "currency_format",
+                "description": "Currency format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "groupby",
+                "description": "Y-Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[string]",
+                "sample_data": null
+            },
+            {
+                "field_name": "left_margin",
+                "description": "Left Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "legend_type",
+                "description": "Legend Type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "linear_color_scheme",
+                "description": "Linear Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metric",
+                "description": "颜色指标",
+                "data_type": "string",
+                "sample_data": "求和(访问量)",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "normalize_across",
+                "description": "Normalize Across",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "normalized",
+                "description": "Normalized",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "row_limit",
+                "description": "数据行数",
+                "data_type": "number",
+                "sample_data": 168,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "show_legend",
+                "description": "Legend",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_percentage",
+                "description": "Show percentage",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_values",
+                "description": "Show Values",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_x_axis",
+                "description": "Sort X Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_y_axis",
+                "description": "Sort Y Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "value_bounds",
+                "description": "Value bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "xAxisLabelRotation",
+                "description": "Rotate x axis label",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis",
+                "description": "X-axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis_time_format",
+                "description": "Time format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "xscale_interval",
+                "description": "X-scale interval",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format",
+                "description": "Value Format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "yscale_interval",
+                "description": "Y-scale interval",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围",
+                "data_type": "string",
+                "sample_data": "最近30天",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "动态过滤",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "平台",
+                        "op": "等于",
+                        "val": "APP"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "颜色映射": "viridis"
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表ID",
+                "data_type": "number",
+                "sample_data": 10006,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-10006",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端配置",
+                "data_type": "object",
+                "sample_data": {
+                    "是否显示数值": true
+                },
+                "required": false
+            }
+        ]
+    }
+}

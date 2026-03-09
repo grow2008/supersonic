@@ -1,0 +1,196 @@
+{
+    "viz_type": "world_map",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型",
+                "data_type": "string",
+                "sample_data": "world_map",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源",
+                "data_type": "string",
+                "sample_data": "70__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_by",
+                "description": "color_by",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_picker",
+                "description": "Bubble Color",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "country_fieldtype",
+                "description": "Country Field Type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "currency_format",
+                "description": "Currency format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "entity",
+                "description": "国家/地区列",
+                "data_type": "string",
+                "sample_data": "国家",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "linear_color_scheme",
+                "description": "Country Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "max_bubble_size",
+                "description": "Max Bubble Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metric",
+                "description": "数值指标",
+                "data_type": "string",
+                "sample_data": "求和(出口额)",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "row_limit",
+                "description": "Row limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "number",
+                "sample_data": null
+            },
+            {
+                "field_name": "secondary_metric",
+                "description": "Bubble Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_bubbles",
+                "description": "Show Bubbles",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_by_metric",
+                "description": "Sort by metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format",
+                "description": "Y Axis Format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围",
+                "data_type": "string",
+                "sample_data": "2025年",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "动态过滤",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "品类",
+                        "op": "等于",
+                        "val": "电子产品"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "地图配色": "viridis"
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表ID",
+                "data_type": "number",
+                "sample_data": 13008,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-13008",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端配置",
+                "data_type": "object",
+                "sample_data": {
+                    "是否显示提示框": true
+                },
+                "required": false
+            }
+        ]
+    }
+}

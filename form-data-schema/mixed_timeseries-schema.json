@@ -1,0 +1,650 @@
+{
+    "viz_type": "mixed_timeseries",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为mixed_timeseries",
+                "data_type": "string",
+                "sample_data": "mixed_timeseries",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识",
+                "data_type": "string",
+                "sample_data": "52__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "adhoc_filters_b",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "area",
+                "description": "Area chart",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "areaB",
+                "description": "Area chart",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_scheme",
+                "description": "Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "currency_format",
+                "description": "Currency format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "currency_format_secondary",
+                "description": "Secondary currency format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "groupby",
+                "description": "Dimensions",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[string]",
+                "sample_data": null
+            },
+            {
+                "field_name": "groupby_b",
+                "description": "Dimensions",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "legendMargin",
+                "description": "Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "legendOrientation",
+                "description": "Orientation",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "legendType",
+                "description": "Type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "limit",
+                "description": "Series limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "limit_b",
+                "description": "Series limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "logAxis",
+                "description": "Logarithmic y-axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "logAxisSecondary",
+                "description": "Logarithmic y-axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "markerEnabled",
+                "description": "Marker",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "markerEnabledB",
+                "description": "Marker",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "markerSize",
+                "description": "Marker size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "markerSizeB",
+                "description": "Marker size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metrics",
+                "description": "多类型时间序列指标配置",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "metric": "求和(销售额)",
+                        "type": "bar"
+                    },
+                    {
+                        "metric": "平均值(客单价)",
+                        "type": "line"
+                    }
+                ],
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "metrics_b",
+                "description": "Metrics",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "minorSplitLine",
+                "description": "Minor Split Line",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "minorTicks",
+                "description": "Minor ticks",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "opacity",
+                "description": "Opacity",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "opacityB",
+                "description": "Opacity",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "order_desc",
+                "description": "Sort Descending",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "order_desc_b",
+                "description": "Sort Descending",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "rich_tooltip",
+                "description": "Rich tooltip",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "row_limit",
+                "description": "数据行数限制",
+                "data_type": "number",
+                "sample_data": 90,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "row_limit_b",
+                "description": "Row limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "seriesType",
+                "description": "Series type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "seriesTypeB",
+                "description": "Series type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_legend",
+                "description": "Show legend",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_query_identifiers",
+                "description": "Show query identifiers",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_value",
+                "description": "Show Values",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_valueB",
+                "description": "Show Values",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_series_ascending",
+                "description": "Sort Series Ascending",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_series_ascendingB",
+                "description": "Sort Series Ascending",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_series_type",
+                "description": "Sort Series By",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_series_typeB",
+                "description": "Sort Series By",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "stack",
+                "description": "Stack series",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "stackB",
+                "description": "Stack series",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "timeseries_limit_metric",
+                "description": "Sort query by",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "timeseries_limit_metric_b",
+                "description": "Sort query by",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "tooltipSortByMetric",
+                "description": "Tooltip sort by metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "tooltipTimeFormat",
+                "description": "Tooltip time format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "truncateXAxis",
+                "description": "Truncate X Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "truncateYAxis",
+                "description": "Truncate Y Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "truncate_metric",
+                "description": "Truncate Metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "truncate_metric_b",
+                "description": "Truncate Metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "xAxisBounds",
+                "description": "X Axis Bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "xAxisLabelInterval",
+                "description": "X Axis Label Interval",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "xAxisLabelRotation",
+                "description": "Rotate x axis label",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis",
+                "description": "X轴时间维度字段",
+                "data_type": "string",
+                "sample_data": "日期",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "x_axis_time_format",
+                "description": "Time format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis_title",
+                "description": "X Axis Title",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis_title_margin",
+                "description": "X Axis Title Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "yAxisIndex",
+                "description": "Y Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "yAxisIndexB",
+                "description": "Y Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "yAxisTitleSecondary",
+                "description": "Secondary y-axis title",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_bounds",
+                "description": "Primary y-axis Bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_bounds_secondary",
+                "description": "Secondary y-axis Bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format",
+                "description": "Primary y-axis format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format_secondary",
+                "description": "Secondary y-axis format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_title",
+                "description": "Y Axis Title",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_title_margin",
+                "description": "Y Axis Title Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_title_position",
+                "description": "Y Axis Title Position",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "zoomable",
+                "description": "Data Zoom",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "2025年Q1",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "区域",
+                        "op": "等于",
+                        "val": "华北"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "双Y轴": true,
+                    "右侧Y轴指标": [
+                        "平均值(客单价)"
+                    ]
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID",
+                "data_type": "number",
+                "sample_data": 11003,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-11003",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端临时配置",
+                "data_type": "object",
+                "sample_data": {
+                    "柱状图配色": "#40a9ff",
+                    "折线图配色": "#ff4d4f"
+                },
+                "supplementary_info": "仅前端使用，后端不处理",
+                "required": false
+            }
+        ]
+    }
+}

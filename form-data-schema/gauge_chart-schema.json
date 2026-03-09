@@ -1,0 +1,292 @@
+{
+    "viz_type": "gauge_chart",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型",
+                "data_type": "string",
+                "sample_data": "gauge_chart",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源",
+                "data_type": "string",
+                "sample_data": "45__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "animation",
+                "description": "Animation",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_scheme",
+                "description": "Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "currency_format",
+                "description": "Currency format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "end_angle",
+                "description": "End angle",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "font_size",
+                "description": "Font size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "groupby",
+                "description": "Dimensions",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[string]",
+                "sample_data": null
+            },
+            {
+                "field_name": "interval_color_indices",
+                "description": "Interval colors",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "intervals",
+                "description": "Interval bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "max_val",
+                "description": "Max",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metric",
+                "description": "仪表盘指标",
+                "data_type": "string",
+                "sample_data": "平均值(使用率)",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "min_val",
+                "description": "Min",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "number_format",
+                "description": "Number format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "overlap",
+                "description": "Overlap",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "round_cap",
+                "description": "Round cap",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "row_limit",
+                "description": "Row limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "number",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_axis_tick",
+                "description": "Show axis line ticks",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_pointer",
+                "description": "Show pointer",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_progress",
+                "description": "Show progress",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_split_line",
+                "description": "Show split lines",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "sort_by_metric",
+                "description": "Sort by metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "split_number",
+                "description": "Split number",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "start_angle",
+                "description": "Start angle",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "value_formatter",
+                "description": "Value format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围",
+                "data_type": "string",
+                "sample_data": "最近1小时",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "动态过滤",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "机器ID",
+                        "op": "等于",
+                        "val": "M001"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "单位": "%"
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表ID",
+                "data_type": "number",
+                "sample_data": 10003,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-10003",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端配置",
+                "data_type": "object",
+                "sample_data": {
+                    "颜色分段": [
+                        [
+                            0,
+                            60,
+                            "green"
+                        ],
+                        [
+                            60,
+                            90,
+                            "orange"
+                        ],
+                        [
+                            90,
+                            100,
+                            "red"
+                        ]
+                    ]
+                },
+                "required": false
+            }
+        ]
+    }
+}

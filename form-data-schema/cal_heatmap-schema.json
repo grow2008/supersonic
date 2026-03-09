@@ -1,0 +1,212 @@
+{
+    "viz_type": "cal_heatmap",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型",
+                "data_type": "string",
+                "sample_data": "cal_heatmap",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源",
+                "data_type": "string",
+                "sample_data": "11__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "cell_padding",
+                "description": "Cell Padding",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "cell_radius",
+                "description": "Cell Radius",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "cell_size",
+                "description": "Cell Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "domain_granularity",
+                "description": "Domain",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "granularity_sqla",
+                "description": "Time Column",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "linear_color_scheme",
+                "description": "Linear Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metrics",
+                "description": "Metrics",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[string]",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_legend",
+                "description": "Legend",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_metric_name",
+                "description": "Show Metric Names",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_values",
+                "description": "Show Values",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "steps",
+                "description": "Color Steps",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "subdomain_granularity",
+                "description": "Subdomain",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "time_range",
+                "description": "Time Range",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis_time_format",
+                "description": "Time Format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format",
+                "description": "Number Format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围",
+                "data_type": "string",
+                "sample_data": "最近一年",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "动态过滤",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "产品",
+                        "op": "等于",
+                        "val": "A产品"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "统计类型": "日活"
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表ID",
+                "data_type": "number",
+                "sample_data": 1002,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-2222",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端临时配置",
+                "data_type": "object",
+                "sample_data": {
+                    "颜色梯度": "蓝到红"
+                },
+                "required": false
+            }
+        ]
+    }
+}

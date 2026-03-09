@@ -25,6 +25,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Profile("tools-cli")
 @SpringBootApplication(scanBasePackages = {"com.tencent.supersonic"},
         exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
 @MapperScan(basePackages = {"com.tencent.supersonic.headless.server.persistence.mapper",
@@ -40,6 +42,7 @@ public class SupersetSemanticDatasetSyncCli {
 
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(SupersetSemanticDatasetSyncCli.class);
+        app.setAdditionalProfiles("tools-cli");
         app.setWebApplicationType(WebApplicationType.NONE);
         try (ConfigurableApplicationContext context = app.run(args)) {
             SupersetSemanticDatasetSyncService syncService =
@@ -168,6 +171,7 @@ public class SupersetSemanticDatasetSyncCli {
         return set;
     }
 
+    @Profile("tools-cli")
     @Configuration(proxyBeanMethods = false)
     static class CliOverrides {
 

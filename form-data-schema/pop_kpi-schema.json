@@ -1,0 +1,100 @@
+{
+    "viz_type": "pop_kpi",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型",
+                "data_type": "string",
+                "sample_data": "pop_kpi",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源",
+                "data_type": "string",
+                "sample_data": "58__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "metric",
+                "description": "KPI指标",
+                "data_type": "string",
+                "sample_data": "求和(总营收)",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "comparison_metric",
+                "description": "对比指标",
+                "data_type": "string",
+                "sample_data": "求和(去年同期营收)",
+                "required": false,
+                "embedding": "禁止传入"
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围",
+                "data_type": "string",
+                "sample_data": "2025年Q1",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "动态过滤",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "事业部",
+                        "op": "等于",
+                        "val": "电商"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "显示同比": true
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表ID",
+                "data_type": "number",
+                "sample_data": 12003,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-12003",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端配置",
+                "data_type": "object",
+                "sample_data": {
+                    "精度": 2
+                },
+                "required": false
+            }
+        ]
+    }
+}

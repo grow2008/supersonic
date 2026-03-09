@@ -8,17 +8,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Profile;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+@Profile("tools-cli")
 @SpringBootApplication(exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
 public class SupersetDatasetRegistrySchemaInspectCli {
 
     public static void main(String[] args) throws Exception {
         SpringApplication app =
                 new SpringApplication(SupersetDatasetRegistrySchemaInspectCli.class);
+        app.setAdditionalProfiles("tools-cli");
         app.setWebApplicationType(WebApplicationType.NONE);
         try (ConfigurableApplicationContext context = app.run(args)) {
             DataSource dataSource = context.getBean(DataSource.class);

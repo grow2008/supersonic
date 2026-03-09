@@ -1,0 +1,225 @@
+{
+    "viz_type": "deck_grid",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为deck_grid",
+                "data_type": "string",
+                "sample_data": "deck_grid",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识",
+                "data_type": "string",
+                "sample_data": "23__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "autozoom",
+                "description": "Auto Zoom",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_scheme",
+                "description": "Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_scheme_type",
+                "description": "Color Scheme Type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "extruded",
+                "description": "Extruded",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "filter_nulls",
+                "description": "Ignore null locations",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "grid_size",
+                "description": "Grid Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_columns",
+                "description": "Extra data for JS",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_data_mutator",
+                "description": "JavaScript data interceptor",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_onclick_href",
+                "description": "JavaScript onClick href",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_tooltip",
+                "description": "JavaScript tooltip generator",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "legend_position",
+                "description": "Legend Position",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "mapbox_style",
+                "description": "Map Style",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "row_limit",
+                "description": "数据行数限制",
+                "data_type": "number",
+                "sample_data": 20000,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "size",
+                "description": "Height",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "spatial",
+                "description": "Longitude & Latitude",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "viewport",
+                "description": "地图视角配置",
+                "data_type": "object",
+                "sample_data": {
+                    "zoom": 12,
+                    "latitude": 31.23,
+                    "longitude": 121.47
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "2025年3月10日",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "城市",
+                        "op": "等于",
+                        "val": "上海市"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "网格类型": "矩形网格"
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID",
+                "data_type": "number",
+                "sample_data": 7004,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-7004",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端临时配置",
+                "data_type": "object",
+                "sample_data": {
+                    "网格透明度": 0.8
+                },
+                "supplementary_info": "仅前端使用，后端不处理",
+                "required": false
+            }
+        ]
+    }
+}

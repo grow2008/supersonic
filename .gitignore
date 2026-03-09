@@ -38,3 +38,5 @@ benchmark/res/
 
 *.class
 bin/
+
+*.bak.*

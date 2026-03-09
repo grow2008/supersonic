@@ -1,0 +1,3025 @@
+[
+    {
+        "name": "Area Chart",
+        "vizKey": "Area",
+        "vizType": "echarts_area",
+        "description": "Area charts are similar to line charts in that they represent variables with the same scale, but area charts stack the metrics on top of each other.",
+        "表现形态": "时间序列（面积）",
+        "适用场景": [
+            "随时间的趋势变化",
+            "多序列占比对比（堆叠面积）",
+            "累计值/总量趋势展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表，用于分组/系列/分类轴（通常为时间维度）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表（可多个），用于绘制多系列面积对比。"
+            },
+            {
+                "key": "x_axis",
+                "required": false,
+                "description": "X 轴字段（通常为时间列）。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤（如 Last week、No filter），用于限制时间窗口。"
+            },
+            {
+                "key": "time_grain_sqla",
+                "required": false,
+                "description": "时间粒度（如 day/week/month），用于时间聚合桶。"
+            },
+            {
+                "key": "stacked",
+                "required": false,
+                "description": "是否堆叠面积（true/false），控制多系列是否叠加展示。"
+            }
+        ],
+        "pluginCategory": "Evolution",
+        "pluginTags": [],
+        "category": "timeseries",
+        "tags": [
+            "timeseries",
+            "area",
+            "stacked"
+        ]
+    },
+    {
+        "name": "Bar Chart",
+        "vizKey": "Bar",
+        "vizType": "echarts_timeseries_bar",
+        "description": "Time-series bar charts display categorical data with rectangular bars with heights or lengths proportional to the values that they represent, ordered by time dimension.",
+        "表现形态": "时间序列（柱状）",
+        "适用场景": [
+            "时间维度的数值对比",
+            "离散时间点的指标差异",
+            "多维度分组柱状对比"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表，用于分组/系列/分类轴（通常为时间维度）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表（可多个），用于绘制多系列柱状对比。"
+            },
+            {
+                "key": "x_axis",
+                "required": false,
+                "description": "X 轴字段（通常为时间列或分类维度）。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤（如 Last week、No filter），用于限制时间窗口。"
+            },
+            {
+                "key": "time_grain_sqla",
+                "required": false,
+                "description": "时间粒度（如 day/week/month），用于时间聚合桶。"
+            },
+            {
+                "key": "orientation",
+                "required": false,
+                "description": "柱状图方向（horizontal/vertical），控制横向/纵向展示。"
+            }
+        ],
+        "pluginCategory": "Evolution",
+        "pluginTags": [],
+        "category": "timeseries",
+        "tags": [
+            "timeseries",
+            "bar",
+            "categorical"
+        ]
+    },
+    {
+        "name": "Big Number with Trendline",
+        "vizKey": "BigNumber",
+        "vizType": "big_number",
+        "description": "Big Number chart displays a single key metric value in a prominent format, often used for KPI dashboards to highlight key values.",
+        "表现形态": "单值指标（大数字）",
+        "适用场景": [
+            "核心KPI展示（如总销售额、用户数）",
+            "仪表盘关键指标突出显示",
+            "无维度对比的单值展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标（仅单个），用于展示核心KPI数值。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤（如 Last week、No filter），用于限制指标计算的时间窗口。"
+            },
+            {
+                "key": "number_format",
+                "required": false,
+                "description": "数字格式化（如 SMART_NUMBER、PERCENT），控制数值展示格式。"
+            },
+            {
+                "key": "subtitle_text",
+                "required": false,
+                "description": "副标题文本，用于补充说明指标含义。"
+            },
+            {
+                "key": "comparison_type",
+                "required": false,
+                "description": "对比类型（如 previous_period、previous_year），用于展示指标同比/环比变化。"
+            }
+        ],
+        "pluginCategory": "KPI",
+        "pluginTags": [],
+        "category": "kpi",
+        "tags": [
+            "kpi",
+            "single_value",
+            "metric"
+        ]
+    },
+    {
+        "name": "Big Number",
+        "vizKey": "BigNumberTotal",
+        "vizType": "big_number_total",
+        "description": "Big Number Total chart displays a cumulative total metric value in a prominent format, with optional comparison to previous periods.",
+        "表现形态": "累计单值指标（大数字）",
+        "适用场景": [
+            "累计类KPI展示（如累计销售额、总用户数）",
+            "全量数据指标汇总",
+            "带累计对比的关键指标"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标（仅单个），用于展示累计核心KPI数值。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤（如 Last week、No filter），用于限制累计计算的时间窗口。"
+            },
+            {
+                "key": "number_format",
+                "required": false,
+                "description": "数字格式化（如 SMART_NUMBER、PERCENT），控制数值展示格式。"
+            },
+            {
+                "key": "compare_lag",
+                "required": false,
+                "description": "对比时间偏移（如 7 天、1 个月），用于展示累计值的周期对比。"
+            }
+        ],
+        "pluginCategory": "KPI",
+        "pluginTags": [],
+        "category": "kpi",
+        "tags": [
+            "kpi",
+            "single_value",
+            "total",
+            "cumulative"
+        ]
+    },
+    {
+        "name": "Box Plot",
+        "vizKey": "BoxPlot",
+        "vizType": "box_plot",
+        "description": "Box Plot (Box and Whisker) chart displays the distribution of numerical data based on the five-number summary: minimum, first quartile, median, third quartile, and maximum.",
+        "表现形态": "箱线图（分布型）",
+        "适用场景": [
+            "数据分布特征分析（如中位数、四分位、异常值）",
+            "多组数据分布对比",
+            "离群值检测"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表，用于分组展示不同类别的箱线图。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "数值型指标，用于计算箱线图的分布特征（中位数、四分位等）。"
+            },
+            {
+                "key": "x_axis",
+                "required": false,
+                "description": "X 轴字段（分类维度），用于排列不同组的箱线图。"
+            },
+            {
+                "key": "show_outliers",
+                "required": false,
+                "description": "是否展示异常值（true/false），控制离群点的显示。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同分组的箱线图颜色。"
+            }
+        ],
+        "pluginCategory": "Distribution",
+        "pluginTags": [],
+        "category": "distribution",
+        "tags": [
+            "boxplot",
+            "distribution",
+            "statistics",
+            "outliers"
+        ]
+    },
+    {
+        "name": "Bubble Chart",
+        "vizKey": "Bubble",
+        "vizType": "bubble_v2",
+        "description": "Bubble Chart displays three dimensions of data: x-axis, y-axis, and bubble size (representing a third metric), with optional color coding for categories.",
+        "表现形态": "气泡图（关联型）",
+        "适用场景": [
+            "三维数据关系分析（X/Y轴+大小）",
+            "多维度指标关联对比",
+            "分类气泡聚类展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "x_axis",
+                "required": true,
+                "description": "X 轴数值型字段，用于气泡的水平位置。"
+            },
+            {
+                "key": "y_axis",
+                "required": true,
+                "description": "Y 轴数值型字段，用于气泡的垂直位置。"
+            },
+            {
+                "key": "size",
+                "required": true,
+                "description": "气泡大小对应的指标，用于表示第三个维度的数值。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "维度字段，用于分组（气泡颜色区分不同类别）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同分组的气泡颜色。"
+            },
+            {
+                "key": "bubble_max_size",
+                "required": false,
+                "description": "气泡最大尺寸，控制气泡大小的上限。"
+            }
+        ],
+        "pluginCategory": "Relationship",
+        "pluginTags": [],
+        "category": "relationship",
+        "tags": [
+            "bubble",
+            "relationship",
+            "3d",
+            "correlation"
+        ]
+    },
+    {
+        "name": "Bullet Chart",
+        "vizKey": "Bullet",
+        "vizType": "bullet",
+        "description": "Bullet Chart displays a primary metric alongside comparative metrics (target, range) in a compact format, ideal for dashboards and KPI tracking.",
+        "表现形态": "子弹图（KPI对比型）",
+        "适用场景": [
+            "KPI目标达成率展示（如实际值vs目标值）",
+            "指标范围对比（如实际值vs参考范围）",
+            "紧凑型多指标对比仪表盘"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "核心指标（实际值），用于展示主要KPI数值。"
+            },
+            {
+                "key": "target",
+                "required": true,
+                "description": "目标值指标，用于对比实际值与目标值的差距。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "维度字段，用于分组展示不同类别的子弹图。"
+            },
+            {
+                "key": "range",
+                "required": false,
+                "description": "参考范围指标，用于展示指标的合理范围。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分实际值、目标值、参考范围的颜色。"
+            }
+        ],
+        "pluginCategory": "KPI",
+        "pluginTags": [],
+        "category": "kpi",
+        "tags": [
+            "kpi",
+            "bullet",
+            "target",
+            "comparison"
+        ]
+    },
+    {
+        "name": "Calendar Heatmap",
+        "vizKey": "Calendar",
+        "vizType": "cal_heatmap",
+        "description": "Calendar Heatmap displays numerical data aggregated by date (day/week/month) using color intensity, ideal for time-based pattern analysis.",
+        "表现形态": "日历热力图（时间维度）",
+        "适用场景": [
+            "按日期的指标分布（如每日销售额、用户活跃度）",
+            "时间维度的热点分析",
+            "周期性（周/月）规律识别"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每日/每周的数值（热力图颜色依据）。"
+            },
+            {
+                "key": "time_grain_sqla",
+                "required": true,
+                "description": "时间粒度（如 day/week），用于日历的聚合单位。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤（如 Last 90 days），用于限制日历展示的时间窗口。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于控制热力图的颜色梯度（数值越高颜色越深）。"
+            },
+            {
+                "key": "number_format",
+                "required": false,
+                "description": "数字格式化，控制tooltip中数值的展示格式。"
+            }
+        ],
+        "pluginCategory": "Evolution",
+        "pluginTags": [],
+        "category": "timeseries",
+        "tags": [
+            "timeseries",
+            "calendar",
+            "heatmap",
+            "time_based"
+        ]
+    },
+    {
+        "name": "Chord Diagram",
+        "vizKey": "Chord",
+        "vizType": "chord",
+        "description": "Chord Chart displays directed relationships between entities, with chord width representing the strength of the relationship.",
+        "表现形态": "弦图（关联关系型）",
+        "适用场景": [
+            "实体间的流向/关联分析（如用户来源-去向、产品流转）",
+            "多实体双向关系对比",
+            "关系强度可视化"
+        ],
+        "图表创建字段": [
+            {
+                "key": "source",
+                "required": true,
+                "description": "来源实体字段，用于定义关系的起点。"
+            },
+            {
+                "key": "target",
+                "required": true,
+                "description": "目标实体字段，用于定义关系的终点。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "关系强度指标，用于控制弦的宽度（数值越大弦越宽）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同实体的颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示实体标签（true/false），控制标签的显示。"
+            },
+            {
+                "key": "sort_entities",
+                "required": false,
+                "description": "实体排序方式（如 alphabetical、value），控制实体的展示顺序。"
+            }
+        ],
+        "pluginCategory": "Relationship",
+        "pluginTags": [],
+        "category": "relationship",
+        "tags": [
+            "chord",
+            "relationship",
+            "flow",
+            "network"
+        ]
+    },
+    {
+        "name": "Time-series Percent Change",
+        "vizKey": "Compare",
+        "vizType": "compare",
+        "description": "Compare Chart displays side-by-side comparisons of metrics across multiple dimensions or time periods, ideal for direct value comparison.",
+        "表现形态": "对比图表（多维度/周期）",
+        "适用场景": [
+            "多维度指标对比（如不同产品、不同区域）",
+            "多周期数值对比（如本周vs上周、本月vs上月）",
+            "直接数值差异展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表，用于分组展示对比项。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表，用于对比不同维度/周期的数值。"
+            },
+            {
+                "key": "comparison_type",
+                "required": true,
+                "description": "对比类型（如 period、dimension），用于定义对比规则。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤，用于周期对比的时间窗口。"
+            },
+            {
+                "key": "show_percent_change",
+                "required": false,
+                "description": "是否展示百分比变化（true/false），控制对比结果的展示形式。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同对比项的颜色。"
+            }
+        ],
+        "pluginCategory": "Comparison",
+        "pluginTags": [],
+        "category": "comparison",
+        "tags": [
+            "compare",
+            "comparison",
+            "side_by_side",
+            "difference"
+        ]
+    },
+    {
+        "name": "Funnel Chart",
+        "vizKey": "Funnel",
+        "vizType": "funnel",
+        "description": "Funnel Chart displays a process with decreasing values at each stage (e.g., sales funnel: leads → prospects → customers), ideal for conversion analysis.",
+        "表现形态": "漏斗图（流程转化型）",
+        "适用场景": [
+            "转化漏斗分析（如销售漏斗、用户转化漏斗）",
+            "流程各阶段数值递减展示",
+            "转化率/流失率监控"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "漏斗阶段字段（如转化阶段、流程步骤），用于定义漏斗的层级。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "各阶段数值指标，用于展示漏斗各层级的数值。"
+            },
+            {
+                "key": "sort_order",
+                "required": false,
+                "description": "漏斗排序方式（asc/desc），控制阶段的展示顺序。"
+            },
+            {
+                "key": "show_percent",
+                "required": false,
+                "description": "是否展示百分比（true/false），控制各阶段占比的显示。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同漏斗阶段的颜色。"
+            }
+        ],
+        "pluginCategory": "Process",
+        "pluginTags": [],
+        "category": "process",
+        "tags": [
+            "funnel",
+            "conversion",
+            "process",
+            "sales"
+        ]
+    },
+    {
+        "name": "Gantt Chart",
+        "vizKey": "Gantt",
+        "vizType": "gantt_chart",
+        "description": "Gantt Chart displays tasks/projects over time, with horizontal bars representing task duration (start/end time) and optional categorization by resource/owner.",
+        "表现形态": "甘特图（时间规划型）",
+        "适用场景": [
+            "项目/任务时间规划（如任务开始/结束时间、时长）",
+            "资源分配与进度监控",
+            "多任务时间重叠分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "start_time",
+                "required": true,
+                "description": "任务开始时间字段，用于定义甘特条的起始位置。"
+            },
+            {
+                "key": "end_time",
+                "required": true,
+                "description": "任务结束时间字段，用于定义甘特条的结束位置。"
+            },
+            {
+                "key": "y_axis",
+                "required": true,
+                "description": "Y轴分类字段（如任务名称、资源、负责人），用于分组展示任务。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "分组字段（如项目、部门），用于二级分类任务。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同分组/任务的甘特条颜色。"
+            },
+            {
+                "key": "zoomable",
+                "required": false,
+                "description": "是否可缩放（true/false），控制时间轴的缩放交互。"
+            },
+            {
+                "key": "x_axis_time_format",
+                "required": false,
+                "description": "X轴时间格式（如 YYYY-MM-DD），控制时间轴的展示格式。"
+            }
+        ],
+        "pluginCategory": "Planning",
+        "pluginTags": [],
+        "category": "planning",
+        "tags": [
+            "gantt",
+            "project",
+            "time",
+            "planning"
+        ]
+    },
+    {
+        "name": "Gauge Chart",
+        "vizKey": "Gauge",
+        "vizType": "gauge_chart",
+        "description": "Gauge Chart displays a single metric value within a predefined range (e.g., 0-100) as a needle on a dial, ideal for KPI threshold monitoring.",
+        "表现形态": "仪表盘图（KPI阈值型）",
+        "适用场景": [
+            "单指标阈值监控（如完成率、使用率、达标率）",
+            "KPI状态可视化（正常/警告/危险）",
+            "紧凑型关键指标展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "核心指标，用于展示仪表盘的指针位置。"
+            },
+            {
+                "key": "min_value",
+                "required": false,
+                "description": "仪表盘最小值（默认0），用于定义数值范围的下限。"
+            },
+            {
+                "key": "max_value",
+                "required": false,
+                "description": "仪表盘最大值（默认100），用于定义数值范围的上限。"
+            },
+            {
+                "key": "thresholds",
+                "required": false,
+                "description": "阈值列表（如 [60, 80]），用于划分正常/警告/危险区间。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同阈值区间的颜色。"
+            },
+            {
+                "key": "show_value",
+                "required": false,
+                "description": "是否展示数值（true/false），控制指标数值的显示。"
+            }
+        ],
+        "pluginCategory": "KPI",
+        "pluginTags": [],
+        "category": "kpi",
+        "tags": [
+            "gauge",
+            "kpi",
+            "threshold",
+            "dial"
+        ]
+    },
+    {
+        "name": "Graph Chart",
+        "vizKey": "Graph",
+        "vizType": "graph_chart",
+        "description": "Graph Chart (Network) displays nodes and edges to represent relationships between entities, with node size/edge width indicating relationship strength.",
+        "表现形态": "网络图（节点-边关联型）",
+        "适用场景": [
+            "实体间的关联分析（如用户关系、产品关联）",
+            "网络结构可视化（如社交网络、供应链）",
+            "关联强度与聚类分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "source",
+                "required": true,
+                "description": "来源节点字段，用于定义边的起点。"
+            },
+            {
+                "key": "target",
+                "required": true,
+                "description": "目标节点字段，用于定义边的终点。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "关联强度指标，用于控制节点大小/边宽度。"
+            },
+            {
+                "key": "layout",
+                "required": false,
+                "description": "布局方式（如 force、circular），控制节点的排列方式。"
+            },
+            {
+                "key": "base_node_size",
+                "required": false,
+                "description": "基础节点大小，用于控制节点的默认尺寸。"
+            },
+            {
+                "key": "base_edge_width",
+                "required": false,
+                "description": "基础边宽度，用于控制边的默认宽度。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同节点/边的颜色。"
+            }
+        ],
+        "pluginCategory": "Relationship",
+        "pluginTags": [],
+        "category": "relationship",
+        "tags": [
+            "graph",
+            "network",
+            "nodes",
+            "edges",
+            "relationship"
+        ]
+    },
+    {
+        "name": "Handlebars",
+        "vizKey": "Handlebars",
+        "vizType": "handlebars",
+        "description": "Handlebars Template chart renders custom HTML/JSON content using Handlebars templating engine, ideal for fully customized data presentation.",
+        "表现形态": "自定义模板（HTML/JSON）",
+        "适用场景": [
+            "全自定义数据展示（如定制化报表、富文本）",
+            "非标准可视化需求",
+            "结合HTML/CSS的个性化展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "template",
+                "required": true,
+                "description": "Handlebars模板字符串，用于定义自定义展示内容。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表，用于模板中渲染数值。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "维度字段列表，用于模板中渲染分组数据。"
+            },
+            {
+                "key": "custom_css",
+                "required": false,
+                "description": "自定义CSS样式，用于美化模板展示效果。"
+            },
+            {
+                "key": "json_format",
+                "required": false,
+                "description": "是否输出JSON格式（true/false），控制模板的输出类型。"
+            }
+        ],
+        "pluginCategory": "Custom",
+        "pluginTags": [],
+        "category": "custom",
+        "tags": [
+            "handlebars",
+            "custom",
+            "template",
+            "html"
+        ]
+    },
+    {
+        "name": "Heatmap",
+        "vizKey": "Heatmap",
+        "vizType": "heatmap_v2",
+        "description": "Heatmap displays two-dimensional numerical data using color intensity, with X/Y axes as categorical dimensions and color representing metric values.",
+        "表现形态": "热力图（二维分布型）",
+        "适用场景": [
+            "二维维度的数值分布（如时间×区域、产品×渠道）",
+            "热点/冷点分析",
+            "多维度交叉分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "x_axis",
+                "required": true,
+                "description": "X轴分类维度字段，用于定义热力图的横向维度。"
+            },
+            {
+                "key": "y_axis",
+                "required": true,
+                "description": "Y轴分类维度字段，用于定义热力图的纵向维度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个交叉点的数值（颜色依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于控制热力图的颜色梯度（数值越高颜色越深）。"
+            },
+            {
+                "key": "show_values",
+                "required": false,
+                "description": "是否展示数值（true/false），控制交叉点数值的显示。"
+            },
+            {
+                "key": "number_format",
+                "required": false,
+                "description": "数字格式化，控制交叉点数值的展示格式。"
+            }
+        ],
+        "pluginCategory": "Distribution",
+        "pluginTags": [],
+        "category": "distribution",
+        "tags": [
+            "heatmap",
+            "distribution",
+            "2d",
+            "color_intensity"
+        ]
+    },
+    {
+        "name": "Histogram",
+        "vizKey": "Histogram",
+        "vizType": "histogram_v2",
+        "description": "Histogram displays the frequency distribution of numerical data, grouping values into bins (intervals) and showing bin counts as bars.",
+        "表现形态": "直方图（频率分布型）",
+        "适用场景": [
+            "数值型数据的频率分布分析（如用户年龄分布、销售额分布）",
+            "数据分布形态识别（正态/偏态）",
+            "区间频次统计"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "数值型指标，用于计算频率分布的基础数据。"
+            },
+            {
+                "key": "bin_size",
+                "required": true,
+                "description": "分箱大小，用于定义数值区间的宽度（如 10、50）。"
+            },
+            {
+                "key": "x_axis",
+                "required": false,
+                "description": "X轴字段（默认为指标分箱），用于定义直方图的横轴。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于控制直方图的颜色。"
+            },
+            {
+                "key": "show_mean",
+                "required": false,
+                "description": "是否展示均值线（true/false），控制均值的显示。"
+            },
+            {
+                "key": "show_median",
+                "required": false,
+                "description": "是否展示中位数线（true/false），控制中位数的显示。"
+            }
+        ],
+        "pluginCategory": "Distribution",
+        "pluginTags": [],
+        "category": "distribution",
+        "tags": [
+            "histogram",
+            "distribution",
+            "frequency",
+            "statistics"
+        ]
+    },
+    {
+        "name": "Horizon Chart",
+        "vizKey": "Horizon",
+        "vizType": "horizon",
+        "description": "Horizon Chart is a compact time-series chart that splits negative/positive values into bands, ideal for displaying multiple time-series in a small space.",
+        "表现形态": "水平地平线图（紧凑型时间序列）",
+        "适用场景": [
+            "多时间序列紧凑型展示（如多指标趋势、多维度对比）",
+            "正负值分离的趋势分析",
+            "小空间内的高密度时间序列展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（通常为时间维度），用于分组展示时间序列。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表，用于展示多时间序列的数值。"
+            },
+            {
+                "key": "time_grain_sqla",
+                "required": true,
+                "description": "时间粒度（如 day/week），用于时间聚合桶。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤，用于限制时间窗口。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同时间序列的颜色。"
+            },
+            {
+                "key": "band_count",
+                "required": false,
+                "description": "波段数量，用于控制正负值分离的波段数。"
+            }
+        ],
+        "pluginCategory": "Evolution",
+        "pluginTags": [],
+        "category": "timeseries",
+        "tags": [
+            "timeseries",
+            "horizon",
+            "compact",
+            "multiple_series"
+        ]
+    },
+    {
+        "name": "Bubble Chart (legacy)",
+        "vizKey": "LegacyBubble",
+        "vizType": "bubble",
+        "description": "Legacy Bubble Chart displays three dimensions of data (x-axis, y-axis, bubble size) with basic styling, maintained for backward compatibility.",
+        "表现形态": "旧版气泡图（关联型）",
+        "适用场景": [
+            "三维数据关系分析（兼容旧版配置）",
+            "简单多维度指标关联对比",
+            "遗留系统的气泡图展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "x_axis",
+                "required": true,
+                "description": "X 轴数值型字段，用于气泡的水平位置。"
+            },
+            {
+                "key": "y_axis",
+                "required": true,
+                "description": "Y 轴数值型字段，用于气泡的垂直位置。"
+            },
+            {
+                "key": "size",
+                "required": true,
+                "description": "气泡大小对应的指标，用于表示第三个维度的数值。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "维度字段，用于分组（气泡颜色区分不同类别）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同分组的气泡颜色。"
+            }
+        ],
+        "pluginCategory": "Relationship",
+        "pluginTags": [],
+        "category": "relationship",
+        "tags": [
+            "bubble",
+            "legacy",
+            "relationship",
+            "3d"
+        ]
+    },
+    {
+        "name": "Line Chart",
+        "vizKey": "Line",
+        "vizType": "echarts_timeseries_line",
+        "description": "Time-series Line Chart displays metric trends over time, with data points connected by lines to show continuous change over a time dimension.",
+        "表现形态": "时间序列（折线）",
+        "适用场景": [
+            "随时间的趋势变化（如小时/日/月指标波动）",
+            "多指标趋势对比",
+            "长期趋势与周期性分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（通常为时间维度），用于分组/系列/分类轴。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表（可多个），用于绘制多系列折线对比。"
+            },
+            {
+                "key": "x_axis",
+                "required": false,
+                "description": "X 轴字段（通常为时间列），用于定义时间轴。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤（如 Last week、No filter），用于限制时间窗口。"
+            },
+            {
+                "key": "time_grain_sqla",
+                "required": false,
+                "description": "时间粒度（如 day/week/month），用于时间聚合桶。"
+            },
+            {
+                "key": "smooth",
+                "required": false,
+                "description": "是否平滑折线（true/false），控制折线的展示样式。"
+            }
+        ],
+        "pluginCategory": "Evolution",
+        "pluginTags": [],
+        "category": "timeseries",
+        "tags": [
+            "timeseries",
+            "line",
+            "trend",
+            "continuous"
+        ]
+    },
+    {
+        "name": "MapBox",
+        "vizKey": "MapBox",
+        "vizType": "mapbox",
+        "description": "MapBox Chart integrates MapBox maps with custom geospatial data, supporting interactive zoom/pan and advanced spatial visualizations (e.g., clusters, heatmaps).",
+        "表现形态": "MapBox地图（高级地理空间）",
+        "适用场景": [
+            "高精度地理空间分析（如经纬度级别的点位展示）",
+            "交互式地图探索（缩放/平移/聚类）",
+            "自定义地图样式与图层叠加"
+        ],
+        "图表创建字段": [
+            {
+                "key": "lat",
+                "required": true,
+                "description": "纬度字段，用于定义地理点位的纬度坐标。"
+            },
+            {
+                "key": "lon",
+                "required": true,
+                "description": "经度字段，用于定义地理点位的经度坐标。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个地理点位的数值（大小/颜色依据）。"
+            },
+            {
+                "key": "map_style",
+                "required": false,
+                "description": "MapBox样式ID，用于自定义地图底图样式。"
+            },
+            {
+                "key": "cluster",
+                "required": false,
+                "description": "是否聚类（true/false），控制高密度点位的聚类展示。"
+            },
+            {
+                "key": "zoom_level",
+                "required": false,
+                "description": "初始缩放级别，用于控制地图的初始展示范围。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [],
+        "category": "geospatial",
+        "tags": [
+            "mapbox",
+            "geospatial",
+            "interactive",
+            "map"
+        ]
+    },
+    {
+        "name": "Mixed Chart",
+        "vizKey": "MixedTimeseries",
+        "vizType": "mixed_timeseries",
+        "description": "Mixed Timeseries Chart combines multiple chart types (line, area, bar) in a single time-series visualization, ideal for multi-metric comparison with different display types.",
+        "表现形态": "混合时间序列（折线/面积/柱状）",
+        "适用场景": [
+            "多指标混合类型展示（如折线+柱状、面积+折线）",
+            "不同量级指标对比（如绝对值+百分比）",
+            "复杂时间序列的分层展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（通常为时间维度），用于分组/系列/分类轴。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表（可多个），用于绘制多系列混合类型对比。"
+            },
+            {
+                "key": "x_axis",
+                "required": false,
+                "description": "X 轴字段（通常为时间列），用于定义时间轴。"
+            },
+            {
+                "key": "series_type",
+                "required": false,
+                "description": "系列类型映射（如 {metric1: 'line', metric2: 'bar'}），用于指定每个指标的展示类型。"
+            },
+            {
+                "key": "secondary_y",
+                "required": false,
+                "description": "次Y轴指标列表，用于展示不同量级的指标。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围过滤，用于限制时间窗口。"
+            }
+        ],
+        "pluginCategory": "Evolution",
+        "pluginTags": [],
+        "category": "timeseries",
+        "tags": [
+            "timeseries",
+            "mixed",
+            "multi_type",
+            "comparison"
+        ]
+    },
+    {
+        "name": "Paired t-test Table",
+        "vizKey": "PairedTTest",
+        "vizType": "paired_ttest",
+        "description": "Paired T-Test Chart displays the results of a paired t-test statistical analysis, comparing means of two related samples (e.g., before/after treatment).",
+        "表现形态": "配对T检验图（统计分析型）",
+        "适用场景": [
+            "配对样本均值对比（如实验前后、对照组vs实验组）",
+            "统计显著性分析",
+            "假设检验结果可视化"
+        ],
+        "图表创建字段": [
+            {
+                "key": "metric1",
+                "required": true,
+                "description": "第一个样本指标，用于配对检验的基础样本。"
+            },
+            {
+                "key": "metric2",
+                "required": true,
+                "description": "第二个样本指标，用于与基础样本对比。"
+            },
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分组字段，用于定义配对的样本组。"
+            },
+            {
+                "key": "alpha",
+                "required": false,
+                "description": "显著性水平（默认0.05），用于判断统计显著性。"
+            },
+            {
+                "key": "show_p_value",
+                "required": false,
+                "description": "是否展示P值（true/false），控制统计检验结果的显示。"
+            },
+            {
+                "key": "show_confidence_interval",
+                "required": false,
+                "description": "是否展示置信区间（true/false），控制置信区间的显示。"
+            }
+        ],
+        "pluginCategory": "Statistics",
+        "pluginTags": [],
+        "category": "statistics",
+        "tags": [
+            "statistics",
+            "t-test",
+            "paired",
+            "significance"
+        ]
+    },
+    {
+        "name": "Parallel Coordinates",
+        "vizKey": "ParallelCoordinates",
+        "vizType": "para",
+        "description": "Parallel Coordinates Chart displays multi-dimensional numerical data, with each dimension as a vertical axis and data points as lines connecting values across axes.",
+        "表现形态": "平行坐标图（多维关联型）",
+        "适用场景": [
+            "多维数值数据关联分析（如多指标特征对比）",
+            "高维数据模式识别",
+            "多维度异常值检测"
+        ],
+        "图表创建字段": [
+            {
+                "key": "dimensions",
+                "required": true,
+                "description": "维度字段列表，用于定义平行坐标的垂直轴。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "数值指标列表，用于绘制跨维度的数值连线。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "分组字段，用于区分不同类别的连线颜色。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同分组的连线颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示轴标签（true/false），控制维度标签的显示。"
+            },
+            {
+                "key": "normalize",
+                "required": false,
+                "description": "是否归一化数值（true/false），用于跨维度数值的可比化。"
+            }
+        ],
+        "pluginCategory": "Relationship",
+        "pluginTags": [],
+        "category": "relationship",
+        "tags": [
+            "parallel",
+            "multi_dimensional",
+            "relationship",
+            "coordinates"
+        ]
+    },
+    {
+        "name": "Partition Chart",
+        "vizKey": "Partition",
+        "vizType": "partition",
+        "description": "Partition Chart (Icicle) displays hierarchical data as nested rectangles, with each level of hierarchy as a row and rectangle size representing metric values.",
+        "表现形态": "分区图（层级矩形型）",
+        "适用场景": [
+            "层级数据占比分析（如品类→子品类→产品销售额）",
+            "分层级的数值分布",
+            "树形结构数据的矩形化展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "层级维度字段列表（按层级顺序），用于定义分区的层级结构。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个分区的大小（面积依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同层级/类别的分区颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示标签（true/false），控制分区标签的显示。"
+            },
+            {
+                "key": "sort_by",
+                "required": false,
+                "description": "排序字段（metric/name），控制分区的排列顺序。"
+            }
+        ],
+        "pluginCategory": "Hierarchy",
+        "pluginTags": [],
+        "category": "hierarchy",
+        "tags": [
+            "partition",
+            "hierarchy",
+            "icicle",
+            "rectangular"
+        ]
+    },
+    {
+        "name": "Pie Chart",
+        "vizKey": "Pie",
+        "vizType": "pie",
+        "description": "Pie Chart displays categorical data as a circular graph divided into slices, with slice size representing the proportion of each category to the total.",
+        "表现形态": "饼图（构成占比型）",
+        "适用场景": [
+            "类别占比分析（如各产品销售额占总销售额的比例）",
+            "部分与整体的关系展示",
+            "少类别（<8）的占比对比"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段，用于定义饼图的切片类别。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个类别的数值（切片大小依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同类别的切片颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示标签（true/false），控制切片标签的显示。"
+            },
+            {
+                "key": "label_type",
+                "required": false,
+                "description": "标签类型（value/percent/name），控制标签展示内容。"
+            },
+            {
+                "key": "donut",
+                "required": false,
+                "description": "是否展示为环形图（true/false），控制饼图的展示样式。"
+            }
+        ],
+        "pluginCategory": "Composition",
+        "pluginTags": [],
+        "category": "composition",
+        "tags": [
+            "pie",
+            "composition",
+            "proportion",
+            "percentage"
+        ]
+    },
+    {
+        "name": "Pivot Table",
+        "vizKey": "PivotTable",
+        "vizType": "pivot_table_v2",
+        "description": "Pivot Table (v2) displays multi-dimensional aggregated data in a tabular format, with rows/columns as dimensions and cells as metric values, supporting sorting/filtering.",
+        "表现形态": "透视表（多维表格型）",
+        "适用场景": [
+            "多维数据交叉分析（如行：区域、列：时间、值：销售额）",
+            "结构化数据明细展示",
+            "可交互的表格分析（排序/过滤/钻取）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "rows",
+                "required": true,
+                "description": "行维度字段列表，用于定义透视表的行。"
+            },
+            {
+                "key": "columns",
+                "required": true,
+                "description": "列维度字段列表，用于定义透视表的列。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标列表，用于计算单元格的数值。"
+            },
+            {
+                "key": "agg_func",
+                "required": false,
+                "description": "聚合函数（sum/avg/count），用于定义指标的聚合方式。"
+            },
+            {
+                "key": "sort_by",
+                "required": false,
+                "description": "排序字段（行/列/值），控制透视表的排序方式。"
+            },
+            {
+                "key": "number_format",
+                "required": false,
+                "description": "数字格式化，控制单元格数值的展示格式。"
+            }
+        ],
+        "pluginCategory": "Table",
+        "pluginTags": [],
+        "category": "table",
+        "tags": [
+            "pivot",
+            "table",
+            "multi_dimensional",
+            "tabular"
+        ]
+    },
+    {
+        "name": "Radar Chart",
+        "vizKey": "Radar",
+        "vizType": "radar",
+        "description": "Radar Chart displays multi-dimensional numerical data on a polar coordinate system, with each dimension as a spoke and data points as a polygon connecting values across spokes.",
+        "表现形态": "雷达图（多维对比型）",
+        "适用场景": [
+            "多维度指标对比（如产品多维度评分、用户多特征分析）",
+            "多维特征的相似度分析",
+            "综合能力/性能评估"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段，用于定义雷达图的系列（不同多边形）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "多维数值指标列表，用于定义雷达图的维度（辐条）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同系列的多边形颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示维度标签（true/false），控制辐条标签的显示。"
+            },
+            {
+                "key": "normalize",
+                "required": false,
+                "description": "是否归一化数值（true/false），用于跨维度数值的可比化。"
+            },
+            {
+                "key": "fill",
+                "required": false,
+                "description": "是否填充多边形（true/false），控制雷达图的展示样式。"
+            }
+        ],
+        "pluginCategory": "Relationship",
+        "pluginTags": [],
+        "category": "relationship",
+        "tags": [
+            "radar",
+            "multi_dimensional",
+            "polar",
+            "comparison"
+        ]
+    },
+    {
+        "name": "Nightingale Rose Chart",
+        "vizKey": "Rose",
+        "vizType": "rose",
+        "description": "Rose Chart (Polar Bar) displays categorical data on a polar coordinate system, with each category as a spoke and bar length/area representing metric values.",
+        "表现形态": "玫瑰图（极坐标柱状型）",
+        "适用场景": [
+            "类别数值的极坐标对比（如各产品销售额、各区域用户数）",
+            "周期性类别数据展示",
+            "视觉化的类别占比/数值对比"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段，用于定义玫瑰图的辐条类别。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个类别的数值（柱长/面积依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同类别的玫瑰图颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示标签（true/false），控制辐条标签的显示。"
+            },
+            {
+                "key": "rose_type",
+                "required": false,
+                "description": "玫瑰图类型（radius/area），控制数值的展示方式（半径/面积）。"
+            }
+        ],
+        "pluginCategory": "Composition",
+        "pluginTags": [],
+        "category": "composition",
+        "tags": [
+            "rose",
+            "polar",
+            "composition",
+            "categorical"
+        ]
+    },
+    {
+        "name": "Sankey Chart",
+        "vizKey": "Sankey",
+        "vizType": "sankey_v2",
+        "description": "Sankey Diagram displays flow relationships between entities, with line width representing the volume of flow between source and target nodes.",
+        "表现形态": "桑基图（流向型）",
+        "适用场景": [
+            "实体间流向/流量关系展示（如用户行为路径、资金流转）",
+            "层级间的流量占比分析",
+            "多维度的流转链路可视化"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段，需包含source（源节点）、target（目标节点）两个维度，定义桑基图的节点与流向。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算节点间的流量值（线条宽度依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同源/目标节点的颜色。"
+            },
+            {
+                "key": "node_width",
+                "required": false,
+                "description": "节点宽度（像素），控制桑基图节点的显示宽度。"
+            },
+            {
+                "key": "node_gap",
+                "required": false,
+                "description": "节点间距（像素），控制同层级节点间的间距。"
+            }
+        ],
+        "pluginCategory": "Flow",
+        "pluginTags": [],
+        "category": "flow",
+        "tags": [
+            "sankey",
+            "flow",
+            "relationship",
+            "hierarchy"
+        ]
+    },
+    {
+        "name": "Scatter Plot",
+        "vizKey": "Scatter",
+        "vizType": "echarts_timeseries_scatter",
+        "description": "Time Series Scatter Chart plots individual data points over a time axis, showing the distribution and trend of metric values over time.",
+        "表现形态": "时序散点图（时间轴分布型）",
+        "适用场景": [
+            "时间维度下的数值分布分析（如每小时用户访问量分布）",
+            "异常值识别（离散点检测）",
+            "多指标的时序相关性分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "granularity_sqla",
+                "required": true,
+                "description": "时间粒度字段，定义散点图的时间轴维度（如小时、天、月）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于确定每个时间点的散点数值。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同系列的散点颜色。"
+            },
+            {
+                "key": "symbol_size",
+                "required": false,
+                "description": "散点符号大小（像素），控制散点的显示尺寸。"
+            },
+            {
+                "key": "show_legend",
+                "required": false,
+                "description": "是否展示图例（true/false），控制系列图例的显示。"
+            }
+        ],
+        "pluginCategory": "Time Series",
+        "pluginTags": [],
+        "category": "time_series",
+        "tags": [
+            "scatter",
+            "time_series",
+            "distribution",
+            "anomaly"
+        ]
+    },
+    {
+        "name": "Smooth Line",
+        "vizKey": "SmoothLine",
+        "vizType": "echarts_timeseries_smooth",
+        "description": "Smooth Line Time Series Chart renders metric values over time with a smoothed curve, emphasizing continuous trends.",
+        "表现形态": "平滑曲线时序图（时间轴趋势型）",
+        "适用场景": [
+            "连续型时间趋势展示（如产品日销量变化趋势）",
+            "多指标的趋势对比（平滑曲线更易区分）",
+            "视觉化的长期趋势分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "granularity_sqla",
+                "required": true,
+                "description": "时间粒度字段，定义时序图的时间轴维度（如小时、天、月）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个时间点的曲线数值。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同指标的曲线颜色。"
+            },
+            {
+                "key": "line_width",
+                "required": false,
+                "description": "曲线宽度（像素），控制平滑曲线的显示粗细。"
+            },
+            {
+                "key": "show_area",
+                "required": false,
+                "description": "是否展示面积填充（true/false），在曲线下方填充颜色增强视觉效果。"
+            }
+        ],
+        "pluginCategory": "Time Series",
+        "pluginTags": [],
+        "category": "time_series",
+        "tags": [
+            "smooth_line",
+            "time_series",
+            "trend",
+            "continuous"
+        ]
+    },
+    {
+        "name": "Stepped Line",
+        "vizKey": "Step",
+        "vizType": "echarts_timeseries_step",
+        "description": "Step Line Time Series Chart displays metric values over time with a step-wise line, highlighting discrete value changes at time intervals.",
+        "表现形态": "阶梯线时序图（时间轴离散型）",
+        "适用场景": [
+            "离散型时间节点的数值变化（如版本发布后的指标变化）",
+            "阶段性指标展示（如按周统计的库存变化）",
+            "非连续型趋势的精准呈现"
+        ],
+        "图表创建字段": [
+            {
+                "key": "granularity_sqla",
+                "required": true,
+                "description": "时间粒度字段，定义时序图的时间轴维度（如小时、天、月）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个时间点的阶梯数值。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同指标的阶梯线颜色。"
+            },
+            {
+                "key": "step_type",
+                "required": false,
+                "description": "阶梯类型（start/middle/end），控制阶梯线的拐点位置。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示数值标签（true/false），在阶梯拐点显示具体数值。"
+            }
+        ],
+        "pluginCategory": "Time Series",
+        "pluginTags": [],
+        "category": "time_series",
+        "tags": [
+            "step_line",
+            "time_series",
+            "discrete",
+            "step"
+        ]
+    },
+    {
+        "name": "Sunburst Chart",
+        "vizKey": "Sunburst",
+        "vizType": "sunburst_v2",
+        "description": "Sunburst Chart displays hierarchical data as concentric circles, with each level of the hierarchy represented by a ring and segment size proportional to metric values.",
+        "表现形态": "旭日图（层级环形型）",
+        "适用场景": [
+            "层级化数据占比分析（如地区-品类-产品的销售额分布）",
+            "多维度层级的钻取分析",
+            "核心节点的层级贡献度展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段（多层级），定义旭日图的环形层级（如region、country、city）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个层级分段的大小（面积依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同层级/类别的分段颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示标签（true/false），控制分段标签的显示。"
+            },
+            {
+                "key": "secondary_metric",
+                "required": false,
+                "description": "次要指标，用于辅助分析层级分段的补充维度数值。"
+            }
+        ],
+        "pluginCategory": "Hierarchy",
+        "pluginTags": [],
+        "category": "hierarchy",
+        "tags": [
+            "sunburst",
+            "hierarchy",
+            "ring",
+            "proportion"
+        ]
+    },
+    {
+        "name": "Table",
+        "vizKey": "Table",
+        "vizType": "table",
+        "description": "Table Chart displays raw or aggregated data in a tabular format, supporting sorting, filtering, and basic formatting of columns.",
+        "表现形态": "基础表格（行列展示型）",
+        "适用场景": [
+            "原始数据/明细数据展示（如用户订单列表）",
+            "多维度数值的精准对比",
+            "数据导出前的可视化核对"
+        ],
+        "图表创建字段": [
+            {
+                "key": "columns",
+                "required": true,
+                "description": "展示列字段，定义表格需要显示的维度/指标列。"
+            },
+            {
+                "key": "metrics",
+                "required": false,
+                "description": "聚合指标，用于表格中数值列的计算（如sum、avg）。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制，控制表格最大展示行数。"
+            },
+            {
+                "key": "sort_by",
+                "required": false,
+                "description": "排序字段，定义表格的默认排序列（升序/降序）。"
+            },
+            {
+                "key": "show_row_number",
+                "required": false,
+                "description": "是否显示行号（true/false），辅助数据定位。"
+            }
+        ],
+        "pluginCategory": "Table",
+        "pluginTags": [],
+        "category": "table",
+        "tags": [
+            "table",
+            "raw_data",
+            "tabular",
+            "detail"
+        ]
+    },
+    {
+        "name": "Time-series Period Pivot",
+        "vizKey": "TimePivot",
+        "vizType": "time_pivot",
+        "description": "Time Pivot Table aggregates and displays time-series data in a pivot format, with time as rows/columns and metrics as values.",
+        "表现形态": "时间透视表（时间维度聚合型）",
+        "适用场景": [
+            "时间维度的交叉分析（如按周/月聚合的销售数据）",
+            "多指标的时间对比（如同比/环比分析）",
+            "时间粒度下的维度钻取"
+        ],
+        "图表创建字段": [
+            {
+                "key": "granularity_sqla",
+                "required": true,
+                "description": "时间粒度字段，定义透视表的时间轴维度（如小时、天、月）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于透视表中数值单元格的计算。"
+            },
+            {
+                "key": "groupby",
+                "required": false,
+                "description": "分类维度字段，用于透视表的行/列分组（如地区、品类）。"
+            },
+            {
+                "key": "time_range",
+                "required": false,
+                "description": "时间范围，定义透视表的时间筛选区间（如近30天、2024年）。"
+            },
+            {
+                "key": "show_totals",
+                "required": false,
+                "description": "是否显示总计（true/false），展示行/列的汇总数值。"
+            }
+        ],
+        "pluginCategory": "Table",
+        "pluginTags": [],
+        "category": "table",
+        "tags": [
+            "time_pivot",
+            "pivot",
+            "time_series",
+            "aggregation"
+        ]
+    },
+    {
+        "name": "Time-series Table",
+        "vizKey": "TimeTable",
+        "vizType": "time_table",
+        "description": "Time Table displays time-series data in a tabular format with support for sparklines and time-based comparisons (e.g., period-over-period).",
+        "表现形态": "时间表（带迷你图的时间列表示）",
+        "适用场景": [
+            "带趋势的时间数据展示（如每日指标+迷你折线图）",
+            "多指标的时间对比（同比/环比）",
+            "紧凑的时间序列报表"
+        ],
+        "图表创建字段": [
+            {
+                "key": "granularity_sqla",
+                "required": true,
+                "description": "时间粒度字段，定义时间表的时间轴维度（如小时、天、月）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于时间表中数值列的计算。"
+            },
+            {
+                "key": "spark_type",
+                "required": false,
+                "description": "迷你图类型（line/bar/area），控制单元格内迷你图的展示形态。"
+            },
+            {
+                "key": "comparison_type",
+                "required": false,
+                "description": "对比类型（同比/环比），用于展示指标的时间对比结果。"
+            },
+            {
+                "key": "date_format",
+                "required": false,
+                "description": "日期格式，定义时间列的显示格式（如YYYY-MM-DD）。"
+            }
+        ],
+        "pluginCategory": "Table",
+        "pluginTags": [],
+        "category": "table",
+        "tags": [
+            "time_table",
+            "sparkline",
+            "time_series",
+            "comparison"
+        ]
+    },
+    {
+        "name": "Generic Chart",
+        "vizKey": "Timeseries",
+        "vizType": "echarts_timeseries",
+        "description": "General Time Series Chart is a flexible container supporting multiple time-series chart types (Area/Bar/Line/Scatter) with unified time-axis configuration.",
+        "表现形态": "通用时序图（多类型兼容型）",
+        "适用场景": [
+            "多类型时序图的灵活切换（如折线/柱状图快速切换）",
+            "多指标的混合展示（如一条折线+一个柱状图）",
+            "统一时间轴的多维度分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "granularity_sqla",
+                "required": true,
+                "description": "时间粒度字段，定义时序图的时间轴维度（如小时、天、月）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个时间点的数值。"
+            },
+            {
+                "key": "chart_type",
+                "required": false,
+                "description": "子图表类型（area/bar/line/scatter），控制时序图的展示形态。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同指标的系列颜色。"
+            },
+            {
+                "key": "show_legend",
+                "required": false,
+                "description": "是否展示图例（true/false），控制系列图例的显示。"
+            }
+        ],
+        "pluginCategory": "Time Series",
+        "pluginTags": [],
+        "category": "time_series",
+        "tags": [
+            "timeseries",
+            "general",
+            "flexible",
+            "mixed"
+        ]
+    },
+    {
+        "name": "Tree Chart",
+        "vizKey": "Tree",
+        "vizType": "tree_chart",
+        "description": "Tree Chart displays hierarchical data as a tree structure with nodes and branches, supporting orthogonal/radial layout and drill-down interactions.",
+        "表现形态": "树形图（层级分支型）",
+        "适用场景": [
+            "层级化结构展示（如组织架构、文件目录）",
+            "节点间的父子关系分析",
+            "层级钻取的交互分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "id",
+                "required": true,
+                "description": "节点ID字段，定义树形图的唯一节点标识。"
+            },
+            {
+                "key": "parent",
+                "required": true,
+                "description": "父节点ID字段，定义节点间的父子关系。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算节点的大小/数值。"
+            },
+            {
+                "key": "layout",
+                "required": false,
+                "description": "布局类型（orthogonal/radial），控制树形图的展示布局（正交/径向）。"
+            },
+            {
+                "key": "orient",
+                "required": false,
+                "description": "朝向（LR/RL/TB/BT），控制正交布局的展开方向。"
+            }
+        ],
+        "pluginCategory": "Hierarchy",
+        "pluginTags": [],
+        "category": "hierarchy",
+        "tags": [
+            "tree",
+            "hierarchy",
+            "structure",
+            "drilldown"
+        ]
+    },
+    {
+        "name": "Treemap",
+        "vizKey": "Treemap",
+        "vizType": "treemap_v2",
+        "description": "Treemap Chart displays hierarchical data as nested rectangles, with rectangle size/color proportional to metric values of each node.",
+        "表现形态": "矩形树图（层级嵌套型）",
+        "适用场景": [
+            "层级化数据的占比展示（如品类-产品的销售额分布）",
+            "大体积层级数据的紧凑可视化",
+            "核心节点的快速识别（大矩形为高价值节点）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段（多层级），定义矩形树图的嵌套层级（如region、country、city）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个矩形的大小（面积依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同层级/类别的矩形颜色。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示标签（true/false），控制矩形内标签的显示。"
+            },
+            {
+                "key": "drilldown",
+                "required": false,
+                "description": "是否启用钻取（true/false），支持点击矩形展开下一层级。"
+            }
+        ],
+        "pluginCategory": "Hierarchy",
+        "pluginTags": [],
+        "category": "hierarchy",
+        "tags": [
+            "treemap",
+            "hierarchy",
+            "rectangle",
+            "nested"
+        ]
+    },
+    {
+        "name": "Waterfall Chart",
+        "vizKey": "Waterfall",
+        "vizType": "waterfall",
+        "description": "Waterfall Chart displays cumulative metric changes over categories, with positive/negative values represented by upward/downward bars and a total bar for final value.",
+        "表现形态": "瀑布图（增量累积型）",
+        "适用场景": [
+            "指标的增量分析（如月度收入增减、成本构成）",
+            "正负值的累积变化展示（如利润构成）",
+            "类别间的增量贡献度分析"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "分类维度字段，定义瀑布图的类别轴（如月份、成本项）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个类别的增量数值。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分正负增量的条形颜色。"
+            },
+            {
+                "key": "show_total",
+                "required": false,
+                "description": "是否显示总计行（true/false），展示最终的累积数值。"
+            },
+            {
+                "key": "total_label",
+                "required": false,
+                "description": "总计行标签，自定义总计行的显示名称（如“总计”、“净利润”）。"
+            }
+        ],
+        "pluginCategory": "Comparison",
+        "pluginTags": [],
+        "category": "comparison",
+        "tags": [
+            "waterfall",
+            "cumulative",
+            "increment",
+            "comparison"
+        ]
+    },
+    {
+        "name": "Word Cloud",
+        "vizKey": "WordCloud",
+        "vizType": "word_cloud",
+        "description": "Word Cloud Chart displays text data as a cloud of words, with word size proportional to metric values (e.g., frequency, volume) and optional rotation.",
+        "表现形态": "词云图（文本权重型）",
+        "适用场景": [
+            "文本关键词的权重展示（如用户评论热词、产品标签）",
+            "非结构化文本的可视化分析",
+            "营销/运营的热词展示"
+        ],
+        "图表创建字段": [
+            {
+                "key": "series",
+                "required": true,
+                "description": "文本字段，定义词云图的展示文本（如关键词、标签）。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个文本的权重（词大小依据）。"
+            },
+            {
+                "key": "size_from",
+                "required": false,
+                "description": "最小字体大小（像素），控制词云的最小文本尺寸。"
+            },
+            {
+                "key": "size_to",
+                "required": false,
+                "description": "最大字体大小（像素），控制词云的最大文本尺寸。"
+            },
+            {
+                "key": "rotation",
+                "required": false,
+                "description": "旋转类型（square/horizontal/vertical），控制文本的旋转方式。"
+            }
+        ],
+        "pluginCategory": "Text",
+        "pluginTags": [],
+        "category": "text",
+        "tags": [
+            "word_cloud",
+            "text",
+            "keyword",
+            "frequency"
+        ]
+    },
+    {
+        "name": "World Map",
+        "vizKey": "WorldMap",
+        "vizType": "world_map",
+        "description": "World Map displays geographic data on a global map canvas, with regions/countries colored or sized based on metric values to visualize spatial distribution of data.",
+        "表现形态": "世界地图（地理空间型）",
+        "适用场景": [
+            "全球范围内的数值分布展示（如各国人口、GDP、销售额）",
+            "地理维度的指标对比分析",
+            "跨国/跨区域业务数据的空间可视化"
+        ],
+        "图表创建字段": [
+            {
+                "key": "geographic_field",
+                "required": true,
+                "description": "地理维度字段（如国家/地区编码、名称），用于关联地图地理边界与数据。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个地理区域的数值（地图配色/尺寸依据）。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同数值区间的地理区域颜色。"
+            },
+            {
+                "key": "map_projection",
+                "required": false,
+                "description": "地图投影方式（如墨卡托、等积投影），控制地图的空间展示形态。"
+            },
+            {
+                "key": "range_min",
+                "required": false,
+                "description": "数值区间最小值，用于定义地图配色/尺寸的下限阈值。"
+            },
+            {
+                "key": "range_max",
+                "required": false,
+                "description": "数值区间最大值，用于定义地图配色/尺寸的上限阈值。"
+            },
+            {
+                "key": "show_legend",
+                "required": false,
+                "description": "是否展示图例（true/false），控制数值与颜色/尺寸对应关系的显示。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [],
+        "category": "geospatial",
+        "tags": [
+            "world_map",
+            "geospatial",
+            "global",
+            "geographic",
+            "spatial"
+        ]
+    },
+    {
+        "name": "Country Map",
+        "vizKey": "CountryMap",
+        "vizType": "country_map",
+        "description": "Country Map visualizes data on a country-level geographic map, enabling detailed spatial analysis of metrics within a specific country's administrative divisions (e.g., provinces, states).",
+        "表现形态": "国家地图（地理空间型）",
+        "适用场景": [
+            "单一国家内各行政区域的指标对比（如各省人口、各州市销售额）",
+            "国家级业务数据的精细化空间分布展示",
+            "区域级趋势分析与地理关联洞察"
+        ],
+        "图表创建字段": [
+            {
+                "key": "geographic_field",
+                "required": true,
+                "description": "地理维度字段（如省份/州编码、名称），用于关联国家内部行政边界与数据。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "聚合指标，用于计算每个行政区域的数值（地图配色/尺寸依据）。"
+            },
+            {
+                "key": "country_code",
+                "required": true,
+                "description": "国家编码（如CN、US），用于指定渲染的目标国家地图。"
+            },
+            {
+                "key": "color_scheme",
+                "required": false,
+                "description": "配色方案，用于区分不同数值区间的行政区域颜色。"
+            },
+            {
+                "key": "administrative_level",
+                "required": false,
+                "description": "行政层级（如省/州、市/县），控制地图展示的行政划分粒度。"
+            },
+            {
+                "key": "show_labels",
+                "required": false,
+                "description": "是否展示区域标签（true/false），控制行政区域名称的显示。"
+            },
+            {
+                "key": "legend_position",
+                "required": false,
+                "description": "图例位置（如top、right、bottom），控制图例在地图中的展示位置。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [],
+        "category": "geospatial",
+        "tags": [
+            "country_map",
+            "geospatial",
+            "national",
+            "administrative",
+            "spatial"
+        ]
+    },
+    {
+        "name": "Cartodiagram",
+        "vizKey": "CartoDiagram",
+        "vizType": "cartodiagram",
+        "description": "CartoDiagram overlays arbitrary Superset charts onto a customizable geographic map (supporting WMS/WFS/XYZ layers), enabling combined visualization of chart metrics and spatial data.",
+        "表现形态": "地图叠加图表（复合地理空间型）",
+        "适用场景": [
+            "地理空间与多维度指标的联合分析（如地图上叠加柱状图/折线图展示区域趋势）",
+            "自定义底图（WMS/WFS/XYZ）+ 业务图表的融合展示",
+            "多尺度地理视角下的精细化指标对比"
+        ],
+        "图表创建字段": [
+            {
+                "key": "map_layers",
+                "required": true,
+                "description": "地图底图层配置，支持WMS、WFS、XYZ等类型的背景图层定义。"
+            },
+            {
+                "key": "chart_viz_type",
+                "required": true,
+                "description": "叠加的图表类型（如bar、line、pie），指定要渲染在地图上的图表类型。"
+            },
+            {
+                "key": "geographic_field",
+                "required": true,
+                "description": "地理维度字段，用于关联地图位置与图表数据。"
+            },
+            {
+                "key": "chart_form_data",
+                "required": true,
+                "description": "叠加图表的配置参数，复用对应图表的所有表单配置（如groupby、metrics）。"
+            },
+            {
+                "key": "initial_map_extent",
+                "required": false,
+                "description": "初始地图视野范围，定义地图加载时的经纬度边界与缩放级别。"
+            },
+            {
+                "key": "chart_size",
+                "required": false,
+                "description": "图表尺寸配置（按缩放级别自定义），控制不同地图缩放层级下的图表大小。"
+            },
+            {
+                "key": "chart_background",
+                "required": false,
+                "description": "图表背景样式（颜色、圆角），优化地图上图表的视觉展示效果。"
+            },
+            {
+                "key": "map_interaction",
+                "required": false,
+                "description": "地图交互配置（平移、缩放、旋转），控制地图的交互行为。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [],
+        "category": "geospatial",
+        "tags": [
+            "cartodiagram",
+            "geospatial",
+            "chart overlay",
+            "map layer",
+            "spatial analysis"
+        ]
+    },
+    {
+        "name": "deck.gl Arc",
+        "vizKey": null,
+        "vizType": "deck_arc",
+        "description": "Plot the distance (like flight paths) between origin and destination.",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Geo",
+            "3D",
+            "Relational",
+            "Web"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Geo",
+            "3D",
+            "Relational",
+            "Web",
+            "geospatial",
+            "non_aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Geojson",
+        "vizKey": null,
+        "vizType": "deck_geojson",
+        "description": "The GeoJsonLayer takes in GeoJSON formatted data and renders it as interactive polygons, lines and points (circles, icons and/or texts).",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "2D"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "2D",
+            "geospatial",
+            "non_aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Grid",
+        "vizKey": null,
+        "vizType": "deck_grid",
+        "description": "Visualize geospatial data like 3D buildings, landscapes, or objects in grid view.",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "3D",
+            "Comparison"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "3D",
+            "Comparison",
+            "geospatial",
+            "aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl 3D Hexagon",
+        "vizKey": null,
+        "vizType": "deck_hex",
+        "description": "Overlays a hexagonal grid on a map, and aggregates data within the boundary of each cell.",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "3D",
+            "Geo",
+            "Comparison"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "3D",
+            "Geo",
+            "Comparison",
+            "geospatial",
+            "aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Heatmap",
+        "vizKey": null,
+        "vizType": "deck_heatmap",
+        "description": "Uses Gaussian Kernel Density Estimation to visualize spatial distribution of data",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Spatial",
+            "Comparison"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Spatial",
+            "Comparison",
+            "geospatial",
+            "aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Multiple Layers",
+        "vizKey": null,
+        "vizType": "deck_multi",
+        "description": "Compose multiple layers together to form complex visuals.",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Multi-Layers"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Multi-Layers",
+            "geospatial",
+            "mixed"
+        ]
+    },
+    {
+        "name": "deck.gl Path",
+        "vizKey": null,
+        "vizType": "deck_path",
+        "description": "Visualizes connected points, which form a path, on a map.",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Web"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Web",
+            "geospatial",
+            "non_aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Polygon",
+        "vizKey": null,
+        "vizType": "deck_polygon",
+        "description": "Visualizes geographic areas from your data as polygons on a Mapbox rendered map. Polygons can be colored using a metric.",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "3D",
+            "Multi-Dimensions",
+            "Geo"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "3D",
+            "Multi-Dimensions",
+            "Geo",
+            "geospatial",
+            "non_aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Scatterplot",
+        "vizKey": null,
+        "vizType": "deck_scatter",
+        "description": "A map that takes rendering circles with a variable radius at latitude/longitude coordinates",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Comparison",
+            "Scatter",
+            "2D",
+            "Geo",
+            "Intensity",
+            "Density"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Comparison",
+            "Scatter",
+            "2D",
+            "Geo",
+            "Intensity",
+            "Density",
+            "geospatial",
+            "non_aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Screen Grid",
+        "vizKey": null,
+        "vizType": "deck_screengrid",
+        "description": "Aggregates data within the boundary of grid cells and maps the aggregated values to a dynamic color scale",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Comparison",
+            "Intensity",
+            "Density"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Comparison",
+            "Intensity",
+            "Density",
+            "geospatial",
+            "aggregate"
+        ]
+    },
+    {
+        "name": "deck.gl Contour",
+        "vizKey": null,
+        "vizType": "deck_contour",
+        "description": "Uses Gaussian Kernel Density Estimation to visualize spatial distribution of data",
+        "表现形态": "地图/空间可视化（deck.gl）",
+        "适用场景": [
+            "空间点/面/轨迹数据展示",
+            "地理分布密度（网格/六边形/热力）",
+            "地图交互（缩放/旋转/视角）"
+        ],
+        "图表创建字段": [
+            {
+                "key": "groupby",
+                "required": true,
+                "description": "维度字段列表（列名）。用于分组/系列/分类轴，把明细数据按维度聚合到可视化需要的粒度。"
+            },
+            {
+                "key": "metrics",
+                "required": true,
+                "description": "指标列表（聚合/度量）。用于计算数值（如 sum(sales)、count(*)），通常至少提供 1 个。"
+            },
+            {
+                "key": "percent_metrics",
+                "required": true,
+                "description": "百分比指标列表。用于把指标转换为百分比/占比列（具体展示随图表而定）；通常与 metrics 搭配使用。"
+            },
+            {
+                "key": "spatial",
+                "required": false,
+                "description": "空间字段/地理编码配置，用于地图类可视化定位。"
+            },
+            {
+                "key": "mapbox_style",
+                "required": false,
+                "description": "Mapbox 底图样式。"
+            },
+            {
+                "key": "viewport",
+                "required": false,
+                "description": "地图视角（中心点/缩放/方位）配置。"
+            },
+            {
+                "key": "row_limit",
+                "required": false,
+                "description": "行数限制（Top-N），用于控制返回/展示的数据量。"
+            }
+        ],
+        "pluginCategory": "Geospatial",
+        "pluginTags": [
+            "deckGL",
+            "Spatial",
+            "Comparison"
+        ],
+        "category": "geospatial",
+        "tags": [
+            "geo",
+            "deckgl",
+            "deckGL",
+            "Spatial",
+            "Comparison",
+            "geospatial",
+            "aggregate"
+        ]
+    }
+]

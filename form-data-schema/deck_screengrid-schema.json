@@ -1,0 +1,201 @@
+{
+    "viz_type": "deck_screengrid",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为deck_screengrid",
+                "data_type": "string",
+                "sample_data": "deck_screengrid",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识",
+                "data_type": "string",
+                "sample_data": "30__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "autozoom",
+                "description": "Auto Zoom",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_scheme_type",
+                "description": "Color Scheme Type",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "filter_nulls",
+                "description": "Ignore null locations",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "grid_size",
+                "description": "Grid Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_columns",
+                "description": "Extra data for JS",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_data_mutator",
+                "description": "JavaScript data interceptor",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_onclick_href",
+                "description": "JavaScript onClick href",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "js_tooltip",
+                "description": "JavaScript tooltip generator",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "mapbox_style",
+                "description": "Map Style",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "row_limit",
+                "description": "数据行数限制",
+                "data_type": "number",
+                "sample_data": 100000,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "size",
+                "description": "Weight",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "spatial",
+                "description": "Longitude & Latitude",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "viewport",
+                "description": "地图视角配置",
+                "data_type": "object",
+                "sample_data": {
+                    "zoom": 11,
+                    "latitude": 23.08,
+                    "longitude": 113.26
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "最近7天",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "用户来源",
+                        "op": "等于",
+                        "val": "移动端"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "网格类型": "屏幕适配网格"
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID",
+                "data_type": "number",
+                "sample_data": 7011,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-7011",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端临时配置",
+                "data_type": "object",
+                "sample_data": {
+                    "网格透明度": 0.9
+                },
+                "supplementary_info": "仅前端使用，后端不处理",
+                "required": false
+            }
+        ]
+    }
+}

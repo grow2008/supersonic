@@ -1,0 +1,166 @@
+{
+    "viz_type": "para",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为para",
+                "data_type": "string",
+                "sample_data": "para",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识",
+                "data_type": "string",
+                "sample_data": "54__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "include_series",
+                "description": "Include Series",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "limit",
+                "description": "Series limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "linear_color_scheme",
+                "description": "Linear Color Scheme",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metrics",
+                "description": "Metrics",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[string]",
+                "sample_data": null
+            },
+            {
+                "field_name": "row_limit",
+                "description": "数据行数限制",
+                "data_type": "number",
+                "sample_data": 500,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "secondary_metric",
+                "description": "Color Metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "series",
+                "description": "Dimension",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_datatable",
+                "description": "Data Table",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "timeseries_limit_metric",
+                "description": "Sort query by",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "2025年3月",
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "客单价",
+                        "op": ">",
+                        "val": 100
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "线条透明度": 0.6
+                },
+                "required": false,
+                "embedding": "允许传入"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID",
+                "data_type": "number",
+                "sample_data": 11005,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-11005",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端临时配置",
+                "data_type": "object",
+                "sample_data": {
+                    "是否显示维度标签": true,
+                    "是否支持维度排序": true
+                },
+                "supplementary_info": "仅前端使用，后端不处理",
+                "required": false
+            }
+        ]
+    }
+}

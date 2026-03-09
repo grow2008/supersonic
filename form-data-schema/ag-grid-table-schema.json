@@ -1,0 +1,133 @@
+{
+    "viz_type": "ag-grid-table",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型，固定为高级表格",
+                "data_type": "string",
+                "sample_data": "ag-grid-table",
+                "required": true,
+                "embedding": "禁止传入（会报无权修改图表）"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源ID与类型",
+                "data_type": "string",
+                "sample_data": "10__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "columns",
+                "description": "表格要展示的列",
+                "data_type": "array[string]",
+                "sample_data": [
+                    "日期",
+                    "省份",
+                    "销售额",
+                    "订单数"
+                ],
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "metrics",
+                "description": "聚合指标",
+                "data_type": "array[string]",
+                "sample_data": [
+                    "求和(销售额)",
+                    "计数(订单ID)"
+                ],
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "row_limit",
+                "description": "最大返回行数",
+                "data_type": "number",
+                "sample_data": 1000,
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "where",
+                "description": "SQL 原始行过滤",
+                "data_type": "string",
+                "sample_data": "销售额 > 100",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "having",
+                "description": "SQL 聚合后过滤",
+                "data_type": "string",
+                "sample_data": "sum(销售额) > 1000",
+                "required": false,
+                "embedding": "禁止传入"
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围",
+                "data_type": "string",
+                "sample_data": "最近7天",
+                "required": false,
+                "embedding": "允许传入（安全）"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "省份",
+                        "op": "等于",
+                        "val": "广东省"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入（安全）"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "城市": "深圳市",
+                    "年份": "2025"
+                },
+                "required": false,
+                "embedding": "允许传入（安全）"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表ID",
+                "data_type": "number",
+                "sample_data": 1001,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID",
+                "data_type": "string",
+                "sample_data": "查询-123456",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端临时配置",
+                "data_type": "object",
+                "sample_data": {
+                    "表格标题": "全国销售明细表"
+                },
+                "required": false
+            }
+        ]
+    }
+}

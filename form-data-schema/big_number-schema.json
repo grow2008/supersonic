@@ -1,0 +1,288 @@
+{
+    "viz_type": "big_number",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为大数图",
+                "data_type": "string",
+                "sample_data": "big_number",
+                "required": true,
+                "embedding": "禁止传入（会报无权修改图表）"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识，格式为{数据源ID}__{数据源类型}",
+                "data_type": "string",
+                "sample_data": "22__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "aggregation",
+                "description": "Aggregation Method",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_picker",
+                "description": "Fixed Color",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "compare_lag",
+                "description": "同比周期（如近1个周期/近7天）",
+                "data_type": "number",
+                "sample_data": 1,
+                "required": false,
+                "embedding": "禁止传入",
+                "supplementary_info": "配合compare_type使用，1表示对比上1个周期，7表示对比上7天"
+            },
+            {
+                "field_name": "compare_suffix",
+                "description": "Comparison suffix",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "currency_format",
+                "description": "Currency format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "force_timestamp_formatting",
+                "description": "Force date format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "header_font_size",
+                "description": "Big Number Font Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "metric",
+                "description": "Metric",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "min_periods",
+                "description": "Min Periods",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "resample_method",
+                "description": "Fill method",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "resample_rule",
+                "description": "Rule",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "rolling_periods",
+                "description": "Periods",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "rolling_type",
+                "description": "Rolling Function",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_metric_name",
+                "description": "Show Metric Name",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_timestamp",
+                "description": "Show Timestamp",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_trend_line",
+                "description": "Show Trend Line",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "start_y_axis_at_zero",
+                "description": "Start y-axis at 0",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "subheader_font_size",
+                "description": "Subheader Font Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "subtitle",
+                "description": "Subtitle",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "subtitle_font_size",
+                "description": "Subtitle Font Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "time_format",
+                "description": "Date format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "time_grain_sqla",
+                "description": "Time Grain",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis",
+                "description": "Temporal X-Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format",
+                "description": "Number format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "今日",
+                "required": false,
+                "embedding": "允许传入（安全）"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表（临时叠加）",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "区域",
+                        "op": "等于",
+                        "val": "华东"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入（安全）"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "数据来源": "实时数仓",
+                    "更新时间": "2025-03-09 16:00"
+                },
+                "required": false,
+                "embedding": "允许传入（安全）"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID（保存后自动生成）",
+                "data_type": "number",
+                "sample_data": 3012,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID（每次渲染自动生成）",
+                "data_type": "string",
+                "sample_data": "查询-108976",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端页面临时存储的非核心配置",
+                "data_type": "object",
+                "sample_data": {
+                    "是否显示同比箭头": true,
+                    "同比字体大小": 14
+                },
+                "supplementary_info": "仅前端使用，后端不处理，页面刷新后可能丢失",
+                "required": false
+            }
+        ]
+    }
+}

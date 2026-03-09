@@ -2,6 +2,7 @@ package com.tencent.supersonic.chat.server.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.google.common.collect.Lists;
+import java.util.Comparator;
 import com.tencent.supersonic.chat.api.pojo.request.ChatExecuteReq;
 import com.tencent.supersonic.chat.api.pojo.request.ChatParseReq;
 import com.tencent.supersonic.chat.api.pojo.request.ChatQueryDataReq;
@@ -11,6 +12,7 @@ import com.tencent.supersonic.chat.server.agent.Agent;
 import com.tencent.supersonic.chat.server.executor.ChatQueryExecutor;
 import com.tencent.supersonic.chat.server.parser.ChatQueryParser;
 import com.tencent.supersonic.chat.server.persistence.dataobject.ChatParseDO;
+import com.tencent.supersonic.chat.server.persistence.dataobject.ChatQueryDO;
 import com.tencent.supersonic.chat.server.persistence.repository.ChatQueryRepository;
 import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
 import com.tencent.supersonic.chat.server.pojo.ParseContext;

@@ -1,0 +1,263 @@
+{
+    "viz_type": "bubble",
+    "field_categories": {
+        "图表创建字段": [
+            {
+                "field_name": "viz_type",
+                "description": "图表类型标识，固定为气泡图",
+                "data_type": "string",
+                "sample_data": "bubble",
+                "required": true,
+                "embedding": "禁止传入（会报无权修改图表）"
+            },
+            {
+                "field_name": "datasource",
+                "description": "数据源标识，格式为{数据源ID}__{数据源类型}",
+                "data_type": "string",
+                "sample_data": "25__table",
+                "required": true,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "adhoc_filters",
+                "description": "Filters",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "array[object]",
+                "sample_data": null
+            },
+            {
+                "field_name": "bottom_margin",
+                "description": "Bottom Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "color_scheme",
+                "description": "气泡配色方案",
+                "data_type": "string",
+                "sample_data": "warm",
+                "required": false,
+                "embedding": "允许传入（仅临时覆盖展示）"
+            },
+            {
+                "field_name": "entity",
+                "description": "Entity",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "left_margin",
+                "description": "Left Margin",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "limit",
+                "description": "Series limit",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "max_bubble_size",
+                "description": "Max Bubble Size",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "series",
+                "description": "Dimension",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "show_legend",
+                "description": "Legend",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "size",
+                "description": "气泡大小对应的指标字段",
+                "data_type": "string",
+                "sample_data": "销售额",
+                "required": false,
+                "embedding": "禁止传入"
+            },
+            {
+                "field_name": "x",
+                "description": "X Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis_format",
+                "description": "X Axis Format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_axis_label",
+                "description": "X轴自定义标签文本",
+                "data_type": "string",
+                "sample_data": "客单价（元）",
+                "required": false,
+                "embedding": "允许传入（仅临时覆盖展示）"
+            },
+            {
+                "field_name": "x_axis_showminmax",
+                "description": "X bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_log_scale",
+                "description": "X Log Scale",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "x_ticks_layout",
+                "description": "X Tick Layout",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y",
+                "description": "Y Axis",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_bounds",
+                "description": "Y Axis Bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_format",
+                "description": "Y Axis Format",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_axis_label",
+                "description": "Y轴自定义标签文本",
+                "data_type": "string",
+                "sample_data": "订单量（笔）",
+                "required": false,
+                "embedding": "允许传入（仅临时覆盖展示）"
+            },
+            {
+                "field_name": "y_axis_showminmax",
+                "description": "Y bounds",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            },
+            {
+                "field_name": "y_log_scale",
+                "description": "Y Log Scale",
+                "required": false,
+                "embedding": "禁止传入",
+                "data_type": "string",
+                "sample_data": null
+            }
+        ],
+        "嵌入时字段": [
+            {
+                "field_name": "time_range",
+                "description": "时间范围过滤条件",
+                "data_type": "string",
+                "sample_data": "2025年3月1日至2025年3月31日",
+                "required": false,
+                "embedding": "允许传入（安全）"
+            },
+            {
+                "field_name": "filters",
+                "description": "维度过滤条件列表（临时叠加）",
+                "data_type": "array[object]",
+                "sample_data": [
+                    {
+                        "col": "城市",
+                        "op": "等于",
+                        "val": "广州市"
+                    }
+                ],
+                "required": false,
+                "embedding": "允许传入（安全）"
+            },
+            {
+                "field_name": "url_params",
+                "description": "业务透传参数",
+                "data_type": "object",
+                "sample_data": {
+                    "统计周期": "月度",
+                    "数据粒度": "城市级"
+                },
+                "required": false,
+                "embedding": "允许传入（安全）"
+            }
+        ],
+        "系统自动生成字段": [
+            {
+                "field_name": "slice_id",
+                "description": "图表切片ID（保存后自动生成）",
+                "data_type": "number",
+                "sample_data": 5009,
+                "required": false
+            },
+            {
+                "field_name": "query_id",
+                "description": "查询ID（每次渲染自动生成）",
+                "data_type": "string",
+                "sample_data": "查询-345678",
+                "required": false
+            }
+        ],
+        "前端临时字段": [
+            {
+                "field_name": "extra_form_data",
+                "description": "前端页面临时存储的非核心配置",
+                "data_type": "object",
+                "sample_data": {
+                    "是否显示气泡标签": true,
+                    "标签字体大小": 12
+                },
+                "supplementary_info": "仅前端使用，后端不处理，页面刷新后可能丢失",
+                "required": false
+            }
+        ]
+    }
+}
