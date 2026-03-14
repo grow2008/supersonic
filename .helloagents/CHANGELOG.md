@@ -36,6 +36,8 @@
   - 脚本: `scripts/validate_formdata_against_superset_instance.py`, `scripts/superset_web_login_to_playwright_state.py`
   - 报告: `output/formdata.validate.superset-instance.6.0.0.json`
   - 截图: `output/playwright/superset.welcome.loggedin.png`
+- **[docs]**: 补齐 `viztype-online.json` 图表元数据与关键字段（基于 `viztype-6.0.0.json` 并做源码印证） — by hetao
+  - 方案: `plan/202603101731_superset-viztype-online-metadata/`
 
 ### 修复
 - **[chat-server]**: 打包后可从 classpath 读取 docs/viztype.json，避免选图退化为 table

@@ -117,6 +117,7 @@ export function onRouteChange() {
 
 export const layout: RunTimeLayoutConfig = (params) => {
   const { initialState } = params as any;
+  const isChatRoute = history.location.pathname.includes('/chat');
   return {
     onMenuHeaderClick: (e) => {
       e.preventDefault();
@@ -143,9 +144,18 @@ export const layout: RunTimeLayoutConfig = (params) => {
       return (
         <ConfigProvider theme={configProviderTheme}>
           <div
-            style={{
-              height: location.pathname.includes('chat') ? 'calc(100vh - 56px)' : undefined,
-            }}
+            style={
+              isChatRoute
+                ? {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minWidth: 0,
+                    minHeight: 'calc(100vh - 56px)',
+                    height: 'calc(100dvh - 56px)',
+                    overflow: 'hidden',
+                  }
+                : undefined
+            }
           >
             {/* <AppPage dom={dom} /> */}
             {dom}

@@ -2,7 +2,6 @@ package com.tencent.supersonic.chat.server.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.google.common.collect.Lists;
-import java.util.Comparator;
 import com.tencent.supersonic.chat.api.pojo.request.ChatExecuteReq;
 import com.tencent.supersonic.chat.api.pojo.request.ChatParseReq;
 import com.tencent.supersonic.chat.api.pojo.request.ChatQueryDataReq;
@@ -68,6 +67,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -154,9 +154,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 queryResult = chatQueryExecutor.execute(executeContext);
                 if (queryResult != null) {
                     log.debug("executor selected: {}, queryState={}, queryMode={}",
-                        chatQueryExecutor.getClass().getSimpleName(), queryResult.getQueryState(),
-                        queryResult.getQueryMode());
-                break;
+                            chatQueryExecutor.getClass().getSimpleName(),
+                            queryResult.getQueryState(), queryResult.getQueryMode());
+                    break;
                 }
             }
         }

@@ -6,7 +6,8 @@ import {
   MsgDataType,
   ParseDataType,
   SearchRecommendItem,
-  SupersetDashboardType,
+  SupersetDashboardItem,
+  SupersetDashboardManageResp,
   SupersetGuestTokenResp,
 } from '../common/type';
 import { isMobile } from '../utils/utils';
@@ -102,22 +103,33 @@ export function getExecuteSummary(
   });
 }
 
-export function fetchSupersetDashboards(pluginId?: number) {
-  return axios.post<SupersetDashboardType[]>(`${prefix}/chat/superset/dashboards`, {
+export function fetchSupersetGuestToken(
+  params: { pluginId?: number; embeddedId: string }
+): Promise<SupersetGuestTokenResp> {
+  return axios.post(`${prefix}/chat/superset/guest-token`, params) as unknown as Promise<SupersetGuestTokenResp>;
+}
+
+export function fetchSupersetManualDashboards(
+  pluginId?: number
+): Promise<SupersetDashboardManageResp> {
+  return axios.post(`${prefix}/chat/superset/dashboards/manage`, {
     pluginId,
-  });
+  }) as unknown as Promise<SupersetDashboardManageResp>;
+}
+
+export function createSupersetDashboard(params: {
+  pluginId?: number;
+  title: string;
+}): Promise<SupersetDashboardItem> {
+  return axios.post(`${prefix}/chat/superset/dashboard/create`, params) as unknown as Promise<SupersetDashboardItem>;
 }
 
 export function pushSupersetChartToDashboard(params: {
   pluginId?: number;
   dashboardId: number;
   chartId: number;
-}) {
-  return axios.post<boolean>(`${prefix}/chat/superset/dashboard/push`, params);
-}
-
-export function fetchSupersetGuestToken(params: { pluginId?: number; embeddedId: string }) {
-  return axios.post<SupersetGuestTokenResp>(`${prefix}/chat/superset/guest-token`, params);
+}): Promise<boolean> {
+  return axios.post(`${prefix}/chat/superset/dashboard/push`, params) as unknown as Promise<boolean>;
 }
 
 export function switchEntity(entityId: string, modelId?: number, chatId?: number) {

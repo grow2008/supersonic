@@ -1,5 +1,6 @@
 package com.tencent.supersonic.chat.server.plugin.build.superset;
 
+import com.tencent.supersonic.common.util.JsonUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -100,6 +103,117 @@ public class SupersetApiClientTest {
     }
 
     @Test
+    public void testBuildDashboardPositionStacksMultipleChartsVertically() {
+        SupersetApiClient client = new SupersetApiClient(new SupersetPluginConfig());
+
+        Map<String, Object> position = client.buildDashboardPosition(Arrays.asList(12L, 34L, 56L),
+                Arrays.asList(260, 300, 180));
+
+        Map<?, ?> grid = (Map<?, ?>) position.get("GRID_ID");
+        Assertions.assertEquals(Arrays.asList("ROW-1", "ROW-2", "ROW-3"), grid.get("children"));
+
+        Map<?, ?> firstRow = (Map<?, ?>) position.get("ROW-1");
+        Map<?, ?> secondRow = (Map<?, ?>) position.get("ROW-2");
+        Map<?, ?> thirdRow = (Map<?, ?>) position.get("ROW-3");
+        Assertions.assertEquals(Collections.singletonList("CHART-12"), firstRow.get("children"));
+        Assertions.assertEquals(Collections.singletonList("CHART-34"), secondRow.get("children"));
+        Assertions.assertEquals(Collections.singletonList("CHART-56"), thirdRow.get("children"));
+
+        Map<?, ?> firstRowMeta = (Map<?, ?>) firstRow.get("meta");
+        Map<?, ?> secondRowMeta = (Map<?, ?>) secondRow.get("meta");
+        Map<?, ?> thirdRowMeta = (Map<?, ?>) thirdRow.get("meta");
+        Assertions.assertEquals(Math.max(1, Math.round(260 / 8f)), firstRowMeta.get("height"));
+        Assertions.assertEquals(Math.max(1, Math.round(300 / 8f)), secondRowMeta.get("height"));
+        Assertions.assertEquals(Math.max(1, Math.round(180 / 8f)), thirdRowMeta.get("height"));
+
+        Map<?, ?> secondChart = (Map<?, ?>) position.get("CHART-34");
+        Map<?, ?> secondChartMeta = (Map<?, ?>) secondChart.get("meta");
+        Assertions.assertEquals(34L, secondChartMeta.get("chartId"));
+        Assertions.assertEquals(12, secondChartMeta.get("width"));
+        Assertions.assertEquals(Math.max(1, Math.round(300 / 8f)), secondChartMeta.get("height"));
+    }
+
+    @Test
+    public void testAppendChartToDashboardPositionBuildsLayoutWhenEmpty() {
+        SupersetApiClient client = new SupersetApiClient(new SupersetPluginConfig());
+
+        Map<String, Object> position =
+                client.appendChartToDashboardPosition(new HashMap<>(), 12L, 260);
+
+        Map<?, ?> grid = (Map<?, ?>) position.get("GRID_ID");
+        Assertions.assertEquals(Collections.singletonList("ROW-1"), grid.get("children"));
+        Map<?, ?> firstRow = (Map<?, ?>) position.get("ROW-1");
+        Assertions.assertEquals(Collections.singletonList("CHART-12"), firstRow.get("children"));
+        Map<?, ?> chart = (Map<?, ?>) position.get("CHART-12");
+        Map<?, ?> chartMeta = (Map<?, ?>) chart.get("meta");
+        Assertions.assertEquals(12L, chartMeta.get("chartId"));
+    }
+
+    @Test
+    public void testAppendChartToDashboardPositionAppendsAfterExistingRows() {
+        SupersetApiClient client = new SupersetApiClient(new SupersetPluginConfig());
+        Map<String, Object> base = client.buildDashboardPosition(Collections.singletonList(12L),
+                Collections.singletonList(260));
+
+        Map<String, Object> position = client.appendChartToDashboardPosition(base, 34L, 300);
+
+        Map<?, ?> grid = (Map<?, ?>) position.get("GRID_ID");
+        Assertions.assertEquals(Arrays.asList("ROW-1", "ROW-2"), grid.get("children"));
+        Map<?, ?> secondRow = (Map<?, ?>) position.get("ROW-2");
+        Assertions.assertEquals(Collections.singletonList("CHART-34"), secondRow.get("children"));
+        Map<?, ?> secondChart = (Map<?, ?>) position.get("CHART-34");
+        Map<?, ?> secondChartMeta = (Map<?, ?>) secondChart.get("meta");
+        Assertions.assertEquals(34L, secondChartMeta.get("chartId"));
+        Assertions.assertEquals(Math.max(1, Math.round(300 / 8f)), secondChartMeta.get("height"));
+    }
+
+    @Test
+    public void testAppendChartToDashboardLayoutFallsBackToEmptyWhenDashboardReadNotFound()
+            throws Exception {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        config.setBaseUrl("http://localhost:8088/");
+        SupersetApiClient client = new SupersetApiClient(config);
+        RoutingFactory factory = new RoutingFactory();
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/dashboard/77",
+                HttpStatus.NOT_FOUND, "{\"message\":\"Not found\"}");
+        factory.add(HttpMethod.PUT, "http://localhost:8088/api/v1/dashboard/77", HttpStatus.OK,
+                "{\"result\":{}}");
+        replaceRestTemplate(client, new RestTemplate(factory));
+
+        client.appendChartToDashboardLayout(77L, 12L, 260);
+
+        RecordingRequest putRequest =
+                factory.getLastRequest(HttpMethod.PUT, "http://localhost:8088/api/v1/dashboard/77");
+        Assertions.assertNotNull(putRequest);
+        String body = putRequest.getWrittenBody();
+        Assertions.assertTrue(body.contains("\"position_json\""));
+        Assertions.assertTrue(body.contains("CHART-12"));
+        Assertions.assertTrue(body.contains("ROW-1"));
+        Assertions.assertTrue(body.contains("\"css\""));
+    }
+
+    @Test
+    public void testAddChartToDashboardPreservesExistingDashboardRelations() throws Exception {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        config.setBaseUrl("http://localhost:8088/");
+        SupersetApiClient client = new SupersetApiClient(config);
+        RoutingFactory factory = new RoutingFactory();
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/chart/12", HttpStatus.OK,
+                "{\"result\":{\"dashboards\":[{\"id\":34},{\"id\":56}]}}");
+        factory.add(HttpMethod.PUT, "http://localhost:8088/api/v1/chart/12", HttpStatus.OK,
+                "{\"result\":{}}");
+        replaceRestTemplate(client, new RestTemplate(factory));
+
+        client.addChartToDashboard(78L, 12L);
+
+        RecordingRequest putRequest =
+                factory.getLastRequest(HttpMethod.PUT, "http://localhost:8088/api/v1/chart/12");
+        Assertions.assertNotNull(putRequest);
+        String body = putRequest.getWrittenBody();
+        Assertions.assertTrue(body.contains("\"dashboards\":[34,56,78]"));
+    }
+
+    @Test
     public void testSanitizeDashboardTitleRemovesSupersetSuffixes() {
         SupersetApiClient client = new SupersetApiClient(new SupersetPluginConfig());
         String title = client.sanitizeDashboardTitle("访问人数趋势图_supersonic_Superset_90_1");
@@ -147,6 +261,99 @@ public class SupersetApiClientTest {
                 factory.getLastUri().toString());
         Assertions.assertEquals("Bearer token-123",
                 factory.getLastRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+    }
+
+    @Test
+    public void testCreateEmptyDashboardInitializesColorConfig() throws Exception {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        config.setBaseUrl("http://localhost:8088/");
+        SupersetApiClient client = new SupersetApiClient(config);
+        RoutingFactory factory = new RoutingFactory();
+        factory.add(HttpMethod.POST, "http://localhost:8088/api/v1/dashboard/", HttpStatus.OK,
+                "{\"result\":{\"id\":77}}");
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/dashboard/77", HttpStatus.OK,
+                "{\"result\":{\"json_metadata\":\"{}\"}}");
+        factory.add(HttpMethod.PUT,
+                "http://localhost:8088/api/v1/dashboard/77/colors?mark_updated=false",
+                HttpStatus.OK, "{\"result\":[]}");
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/dashboard/77/embedded",
+                HttpStatus.NOT_FOUND, "{\"message\":\"not found\"}");
+        factory.add(HttpMethod.POST, "http://localhost:8088/api/v1/dashboard/77/embedded",
+                HttpStatus.OK, "{\"result\":{\"uuid\":\"embed-77\"}}");
+        replaceRestTemplate(client, new RestTemplate(factory));
+
+        SupersetDashboardInfo dashboardInfo =
+                client.createEmptyDashboard("supersonic_dashboard", Collections.emptyList());
+
+        Assertions.assertEquals(77L, dashboardInfo.getId());
+        RecordingRequest colorRequest = factory.getLastRequest(HttpMethod.PUT,
+                "http://localhost:8088/api/v1/dashboard/77/colors?mark_updated=false");
+        Assertions.assertNotNull(colorRequest);
+        Map<String, Object> colorPayload =
+                JsonUtil.toObject(colorRequest.getWrittenBody(), Map.class);
+        Assertions.assertTrue(colorPayload.containsKey("color_namespace"));
+        Assertions.assertTrue(colorPayload.containsKey("color_scheme"));
+        Assertions.assertEquals(Collections.emptyList(), colorPayload.get("color_scheme_domain"));
+        Assertions.assertEquals(Collections.emptyList(), colorPayload.get("shared_label_colors"));
+        Assertions.assertEquals(Collections.emptyMap(), colorPayload.get("map_label_colors"));
+        Assertions.assertEquals(Collections.emptyMap(), colorPayload.get("label_colors"));
+    }
+
+    @Test
+    public void testCreateEmbeddedGuestTokenInitializesMissingColorConfig() throws Exception {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        config.setBaseUrl("http://localhost:8088/");
+        SupersetApiClient client = new SupersetApiClient(config);
+        RoutingFactory factory = new RoutingFactory();
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/embedded_dashboard/embed-77",
+                HttpStatus.OK, "{\"result\":{\"dashboard_id\":\"77\"}}");
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/dashboard/77", HttpStatus.OK,
+                "{\"result\":{\"json_metadata\":{\"label_colors\":{\"Revenue\":\"#fff\"}}}}");
+        factory.add(HttpMethod.PUT,
+                "http://localhost:8088/api/v1/dashboard/77/colors?mark_updated=false",
+                HttpStatus.OK, "{\"result\":[]}");
+        factory.add(HttpMethod.POST, "http://localhost:8088/api/v1/security/guest_token/",
+                HttpStatus.OK, "{\"token\":\"guest-token-77\"}");
+        replaceRestTemplate(client, new RestTemplate(factory));
+
+        String token = client.createEmbeddedGuestToken("embed-77");
+
+        Assertions.assertEquals("guest-token-77", token);
+        RecordingRequest colorRequest = factory.getLastRequest(HttpMethod.PUT,
+                "http://localhost:8088/api/v1/dashboard/77/colors?mark_updated=false");
+        Assertions.assertNotNull(colorRequest);
+        Map<String, Object> colorPayload =
+                JsonUtil.toObject(colorRequest.getWrittenBody(), Map.class);
+        Assertions.assertEquals(Collections.emptyList(), colorPayload.get("color_scheme_domain"));
+        Assertions.assertEquals(Collections.emptyList(), colorPayload.get("shared_label_colors"));
+        Assertions.assertEquals(Collections.emptyMap(), colorPayload.get("map_label_colors"));
+        Assertions.assertEquals(Collections.singletonMap("Revenue", "#fff"),
+                colorPayload.get("label_colors"));
+    }
+
+    @Test
+    public void testCreateEmbeddedGuestTokenSkipsColorInitWhenMetadataComplete() throws Exception {
+        SupersetPluginConfig config = new SupersetPluginConfig();
+        config.setBaseUrl("http://localhost:8088/");
+        SupersetApiClient client = new SupersetApiClient(config);
+        RoutingFactory factory = new RoutingFactory();
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/embedded_dashboard/embed-88",
+                HttpStatus.OK, "{\"result\":{\"dashboard_id\":\"88\"}}");
+        factory.add(HttpMethod.GET, "http://localhost:8088/api/v1/dashboard/88", HttpStatus.OK,
+                "{\"result\":{\"json_metadata\":{\"color_namespace\":\"dashboard-88\","
+                        + "\"color_scheme\":\"supersetColors\","
+                        + "\"color_scheme_domain\":[\"A\"]," + "\"shared_label_colors\":[],"
+                        + "\"map_label_colors\":{}," + "\"label_colors\":{}}}}");
+        factory.add(HttpMethod.POST, "http://localhost:8088/api/v1/security/guest_token/",
+                HttpStatus.OK, "{\"token\":\"guest-token-88\"}");
+        replaceRestTemplate(client, new RestTemplate(factory));
+
+        String token = client.createEmbeddedGuestToken("embed-88");
+
+        Assertions.assertEquals("guest-token-88", token);
+        RecordingRequest colorRequest = factory.getLastRequest(HttpMethod.PUT,
+                "http://localhost:8088/api/v1/dashboard/88/colors?mark_updated=false");
+        Assertions.assertNull(colorRequest);
     }
 
     @Test
@@ -365,7 +572,7 @@ public class SupersetApiClientTest {
         public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) {
             this.lastUri = uri;
             this.lastMethod = httpMethod;
-            this.lastRequest = new RecordingRequest(uri, httpMethod, body);
+            this.lastRequest = new RecordingRequest(uri, httpMethod, HttpStatus.OK, body);
             return lastRequest;
         }
 
@@ -382,15 +589,56 @@ public class SupersetApiClientTest {
         }
     }
 
+    private static class RoutingFactory implements ClientHttpRequestFactory {
+        private final Map<String, ResponseSpec> routes = new LinkedHashMap<>();
+        private final Map<String, RecordingRequest> requests = new LinkedHashMap<>();
+
+        void add(HttpMethod method, String url, HttpStatus status, String responseJson) {
+            routes.put(buildKey(method, url), new ResponseSpec(status, responseJson.getBytes()));
+        }
+
+        RecordingRequest getLastRequest(HttpMethod method, String url) {
+            return requests.get(buildKey(method, url));
+        }
+
+        @Override
+        public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) {
+            String key = buildKey(httpMethod, uri.toString());
+            ResponseSpec spec =
+                    routes.getOrDefault(key, new ResponseSpec(HttpStatus.OK, "{}".getBytes()));
+            RecordingRequest request =
+                    new RecordingRequest(uri, httpMethod, spec.status, spec.body);
+            requests.put(key, request);
+            return request;
+        }
+
+        private String buildKey(HttpMethod method, String url) {
+            return method + " " + url;
+        }
+    }
+
+    private static class ResponseSpec {
+        private final HttpStatus status;
+        private final byte[] body;
+
+        private ResponseSpec(HttpStatus status, byte[] body) {
+            this.status = status;
+            this.body = body;
+        }
+    }
+
     private static class RecordingRequest implements ClientHttpRequest {
         private final URI uri;
         private final HttpMethod method;
+        private final HttpStatus status;
         private final byte[] responseBody;
         private final HttpHeaders headers = new HttpHeaders();
+        private final ByteArrayOutputStream requestBody = new ByteArrayOutputStream();
 
-        RecordingRequest(URI uri, HttpMethod method, byte[] responseBody) {
+        RecordingRequest(URI uri, HttpMethod method, HttpStatus status, byte[] responseBody) {
             this.uri = uri;
             this.method = method;
+            this.status = status;
             this.responseBody = responseBody;
         }
 
@@ -399,17 +647,17 @@ public class SupersetApiClientTest {
             return new ClientHttpResponse() {
                 @Override
                 public HttpStatus getStatusCode() {
-                    return HttpStatus.OK;
+                    return status;
                 }
 
                 @Override
                 public int getRawStatusCode() {
-                    return HttpStatus.OK.value();
+                    return status.value();
                 }
 
                 @Override
                 public String getStatusText() {
-                    return HttpStatus.OK.getReasonPhrase();
+                    return status.getReasonPhrase();
                 }
 
                 @Override
@@ -430,8 +678,8 @@ public class SupersetApiClientTest {
         }
 
         @Override
-        public OutputStream getBody() throws IOException {
-            return OutputStream.nullOutputStream();
+        public OutputStream getBody() {
+            return requestBody;
         }
 
         @Override
@@ -447,6 +695,10 @@ public class SupersetApiClientTest {
         @Override
         public HttpHeaders getHeaders() {
             return headers;
+        }
+
+        String getWrittenBody() {
+            return requestBody.toString();
         }
     }
 }

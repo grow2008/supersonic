@@ -3,6 +3,7 @@ import { CheckCircleFilled, InfoCircleOutlined } from '@ant-design/icons';
 import { PREFIX_CLS, MsgContentTypeEnum } from '../../common/constants';
 import { MsgDataType } from '../../common/type';
 import ChatMsg from '../ChatMsg';
+import MarkDown from '../ChatMsg/MarkDown';
 import SupersetChart from '../ChatMsg/SupersetChart';
 import WebPage from '../ChatMsg/WebPage';
 import Loading from './Loading';
@@ -163,10 +164,10 @@ const ExecuteItem: React.FC<Props> = ({
             <div className={`${prefixCls}-auth-tip`}>提示：{data.queryAuthorization.message}</div>
           )}
           {data.textSummary && (
-            <p className={`${prefixCls}-step-title`}>
+            <div className={`${prefixCls}-step-title`}>
               <span style={{ marginRight: 5 }}>总结:</span>
-              <ReactMarkdown>{data.textSummary}</ReactMarkdown>
-            </p>
+              <MarkDown markdown={data.textSummary} />
+            </div>
           )}
 
           {renderCustomExecuteNode && executeItemNode ? (

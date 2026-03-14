@@ -9,10 +9,10 @@ import com.tencent.supersonic.chat.server.plugin.ChatPlugin;
 import com.tencent.supersonic.chat.server.plugin.build.ParamOption;
 import com.tencent.supersonic.chat.server.plugin.build.WebBase;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetApiClient;
+import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetChartBuildRequest;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetChartCandidate;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetChartInfo;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetChartResp;
-import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetDashboardInfo;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetPluginConfig;
 import com.tencent.supersonic.chat.server.plugin.build.superset.SupersetVizTypeSelector;
 import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
@@ -65,8 +65,9 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             + "1. For column/metric fields, ONLY use fields in #Columns and #MetricsCandidates.\n"
             + "2. Provide required keys for the viz_type; omit others.\n"
             + "3. Return JSON only, no extra text.\n"
-            + "4. Output fields: query_mode, metrics, metrics_b, metric, secondary_metric, tooltip_metrics, groupby, columns, column, granularity_sqla, x_axis, y_axis,\n"
-            + "   source, target, entity, latitude, longitude, start, end, x, y, size, select_country, time_series_option, all_columns, all_columns_x, all_columns_y.\n"
+            + "4. Output fields: query_mode, metrics, metrics_b, metric, secondary_metric, tooltip_metrics, groupby, groupbyRows, groupbyColumns,\n"
+            + "   columns, column, column_collection, granularity_sqla, time_grain_sqla, x_axis, y_axis, source, target, entity, latitude, longitude,\n"
+            + "   start, end, x, y, size, select_country, time_series_option, all_columns, all_columns_x, all_columns_y.\n"
             + "5. Arrays must be JSON arrays; strings must be JSON strings.\n"
             + "#UserInstruction: {{instruction}}\n" + "#VizType: {{viz_type}}\n"
             + "#RequiredKeys: {{required_keys}}\n" + "#Columns: {{columns}}\n"
@@ -154,37 +155,26 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         try {
             SupersetApiClient client = new SupersetApiClient(config);
             String chartName = buildChartName(executeContext, plugin);
+            String dashboardTitle = buildDashboardTitle(executeContext, chartName);
             log.debug("superset build chart start, pluginId={}, vizType={}, chartName={}",
                     plugin.getId(), vizType, chartName);
             List<String> dashboardTags = buildDashboardTags(executeContext);
-            List<SupersetChartCandidate> chartCandidates = buildChartCandidates(client,
-                    vizTypeCandidates, sql, chartName, config, executeContext, queryResult,
-                    datasetInfo, datasetId, databaseId, schema, dashboardTags);
-            if (!chartCandidates.isEmpty()) {
-                SupersetChartCandidate primary = chartCandidates.get(0);
-                response.setChartId(primary.getChartId());
-                response.setChartUuid(primary.getChartUuid());
-                response.setGuestToken(primary.getGuestToken());
-                response.setEmbeddedId(primary.getEmbeddedId());
-                response.setSupersetDomain(primary.getSupersetDomain());
-                response.setVizType(primary.getVizType());
-                response.setVizTypeCandidates(chartCandidates);
-            } else {
+            List<SupersetChartBuildRequest> chartRequests = buildChartRequests(vizTypeCandidates,
+                    chartName, config, executeContext, queryResult, datasetInfo);
+            if (chartRequests.isEmpty()) {
                 throw new IllegalStateException("superset chart build failed");
             }
-            response.setWebPage(
-                    buildWebPage(resolveDashboardHeight(config, response.getVizType())));
+            List<SupersetChartCandidate> chartCandidates =
+                    buildEmbeddedChartCandidates(client, dashboardTitle, chartRequests, sql,
+                            datasetId, databaseId, schema, dashboardTags, config);
+            populateFinalDashboardResponse(response, dashboardTitle, chartCandidates, config,
+                    resolveChartHeights(chartRequests));
             log.debug(
-                    "superset build chart success, pluginId={}, chartId={}, chartUuid={}, guestToken={}",
-                    plugin.getId(), response.getChartId(), response.getChartUuid(),
+                    "superset build chart success, pluginId={}, dashboardId={}, chartCount={}, guestToken={}",
+                    plugin.getId(), response.getDashboardId(),
+                    response.getVizTypeCandidates() == null ? 0
+                            : response.getVizTypeCandidates().size(),
                     StringUtils.isNotBlank(response.getGuestToken()));
-            List<SupersetDashboardInfo> dashboards = Collections.emptyList();
-            try {
-                dashboards = client.listDashboards();
-            } catch (Exception ex) {
-                log.warn("superset dashboard list load failed", ex);
-            }
-            response.setDashboards(dashboards);
             response.setFallback(false);
         } catch (Exception ex) {
             log.warn("superset chart build failed", ex);
@@ -320,9 +310,13 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         String queryText = executeContext == null || executeContext.getRequest() == null ? null
                 : executeContext.getRequest().getQueryText();
         Agent agent = executeContext == null ? null : executeContext.getAgent();
+        String executedSql = resolveSql(queryResult,
+                executeContext == null ? null : executeContext.getParseInfo());
         QueryResult resolvedResult = resolveQueryResultForVizType(queryResult,
                 executeContext == null ? null : executeContext.getParseInfo(), datasetInfo);
-        return SupersetVizTypeSelector.selectCandidates(config, resolvedResult, queryText, agent);
+        return SupersetVizTypeSelector.selectCandidates(config, resolvedResult, queryText, agent,
+                executedSql, executeContext == null ? null : executeContext.getParseInfo(),
+                datasetInfo);
     }
 
     private List<SupersetVizTypeSelector.VizTypeItem> ensureFormDataCandidates(
@@ -512,6 +506,7 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         List<String> tags = new ArrayList<>();
         tags.add("supersonic");
         tags.add("supersonic-single-chart");
+        tags.add("supersonic-chat-dashboard");
         SemanticParseInfo parseInfo = executeContext == null ? null : executeContext.getParseInfo();
         if (parseInfo != null && parseInfo.getDataSet() != null
                 && parseInfo.getDataSet().getDataSetId() != null) {
@@ -520,19 +515,15 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         return tags;
     }
 
-    private List<SupersetChartCandidate> buildChartCandidates(SupersetApiClient client,
-            List<SupersetVizTypeSelector.VizTypeItem> candidates, String sql, String chartName,
+    private List<SupersetChartBuildRequest> buildChartRequests(
+            List<SupersetVizTypeSelector.VizTypeItem> candidates, String chartName,
             SupersetPluginConfig config, ExecuteContext executeContext, QueryResult queryResult,
-            SupersetDatasetInfo datasetInfo, Long datasetId, Long databaseId, String schema,
-            List<String> dashboardTags) {
-        if (client == null || candidates == null || candidates.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<SupersetChartCandidate> results = new ArrayList<>();
-        Long resolvedDatasetId = datasetId;
-        int limit = Math.min(3, candidates.size());
-        for (int i = 0; i < limit; i++) {
-            SupersetVizTypeSelector.VizTypeItem candidate = candidates.get(i);
+            SupersetDatasetInfo datasetInfo) {
+        List<SupersetChartBuildRequest> requests = new ArrayList<>();
+        List<SupersetVizTypeSelector.VizTypeItem> prioritized =
+                prioritizeChartCandidates(candidates);
+        for (int i = 0; i < prioritized.size(); i++) {
+            SupersetVizTypeSelector.VizTypeItem candidate = prioritized.get(i);
             if (candidate == null || StringUtils.isBlank(candidate.getVizType())) {
                 continue;
             }
@@ -557,57 +548,120 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
                         executeContext.getParseInfo() == null
                                 || executeContext.getParseInfo().getDimensions() == null ? 0
                                         : executeContext.getParseInfo().getDimensions().size());
-                SupersetChartInfo chartInfo = client.createEmbeddedChart(sql, candidateChartName,
-                        vizType, formData, resolvedDatasetId, databaseId, schema, dashboardTags,
-                        resolveDashboardHeight(config, vizType),
-                        buildDashboardTitle(executeContext, chartName));
-                if (resolvedDatasetId == null && chartInfo.getDatasetId() != null) {
-                    resolvedDatasetId = chartInfo.getDatasetId();
-                }
-                SupersetChartCandidate chartCandidate = new SupersetChartCandidate();
-                chartCandidate.setVizType(vizType);
-                String vizName = StringUtils.defaultIfBlank(candidate.getLlmName(),
-                        StringUtils.defaultIfBlank(candidate.getName(), vizType));
-                chartCandidate.setVizName(vizName);
-                chartCandidate.setChartId(chartInfo.getChartId());
-                chartCandidate.setChartUuid(chartInfo.getChartUuid());
-                chartCandidate.setGuestToken(chartInfo.getGuestToken());
-                chartCandidate.setEmbeddedId(chartInfo.getEmbeddedId());
-                chartCandidate.setSupersetDomain(buildSupersetDomain(config));
-                results.add(chartCandidate);
+                SupersetChartBuildRequest request = new SupersetChartBuildRequest();
+                request.setVizType(vizType);
+                request.setVizName(StringUtils.defaultIfBlank(candidate.getLlmName(),
+                        StringUtils.defaultIfBlank(candidate.getName(), vizType)));
+                request.setChartName(candidateChartName);
+                request.setDashboardHeight(resolveDashboardHeight(config, vizType));
+                request.setFormData(formData);
+                requests.add(request);
             } catch (Exception ex) {
                 log.warn("superset chart candidate skipped, vizType={}, reason={}", vizType,
                         ex.getMessage());
                 log.debug("superset chart candidate error", ex);
             }
         }
-        boolean hasTableCandidate = containsVizTypeCandidate(candidates, "table");
-        if (results.isEmpty() && !hasTableCandidate) {
-            String fallbackVizType = "table";
-            try {
-                Map<String, Object> formData = buildFormData(config, executeContext.getParseInfo(),
-                        queryResult, datasetInfo, fallbackVizType, executeContext.getAgent(),
-                        executeContext.getRequest() == null ? null
-                                : executeContext.getRequest().getQueryText());
-                SupersetChartInfo chartInfo = client.createEmbeddedChart(sql, chartName,
-                        fallbackVizType, formData, resolvedDatasetId, databaseId, schema,
-                        dashboardTags, resolveDashboardHeight(config, fallbackVizType),
-                        buildDashboardTitle(executeContext, chartName));
-                SupersetChartCandidate fallback = new SupersetChartCandidate();
-                fallback.setVizType(fallbackVizType);
-                fallback.setVizName(fallbackVizType);
-                fallback.setChartId(chartInfo.getChartId());
-                fallback.setChartUuid(chartInfo.getChartUuid());
-                fallback.setGuestToken(chartInfo.getGuestToken());
-                fallback.setEmbeddedId(chartInfo.getEmbeddedId());
-                fallback.setSupersetDomain(buildSupersetDomain(config));
-                results.add(fallback);
-            } catch (Exception ex) {
-                log.warn("superset table fallback failed, reason={}", ex.getMessage());
-                log.debug("superset table fallback error", ex);
+        return requests;
+    }
+
+    private List<SupersetVizTypeSelector.VizTypeItem> prioritizeChartCandidates(
+            List<SupersetVizTypeSelector.VizTypeItem> candidates) {
+        List<SupersetVizTypeSelector.VizTypeItem> prioritized = new ArrayList<>();
+        SupersetVizTypeSelector.VizTypeItem tableCandidate = null;
+        if (!CollectionUtils.isEmpty(candidates)) {
+            for (SupersetVizTypeSelector.VizTypeItem candidate : candidates) {
+                if (candidate == null || StringUtils.isBlank(candidate.getVizType())) {
+                    continue;
+                }
+                if (StringUtils.equalsIgnoreCase(candidate.getVizType(), "table")) {
+                    if (tableCandidate == null) {
+                        tableCandidate = candidate;
+                    }
+                    continue;
+                }
+                if (prioritized.size() < 3) {
+                    prioritized.add(candidate);
+                }
             }
         }
-        return results;
+        if (tableCandidate == null) {
+            tableCandidate = buildFallbackTableCandidate();
+        }
+        if (tableCandidate != null) {
+            prioritized.add(tableCandidate);
+        }
+        return prioritized;
+    }
+
+    private SupersetVizTypeSelector.VizTypeItem buildFallbackTableCandidate() {
+        SupersetVizTypeSelector.VizTypeItem item = new SupersetVizTypeSelector.VizTypeItem();
+        item.setVizType("table");
+        item.setName("Table");
+        item.setLlmName("Table");
+        return item;
+    }
+
+    private List<SupersetChartCandidate> buildEmbeddedChartCandidates(SupersetApiClient client,
+            String dashboardTitle, List<SupersetChartBuildRequest> chartRequests, String sql,
+            Long datasetId, Long databaseId, String schema, List<String> dashboardTags,
+            SupersetPluginConfig config) {
+        if (client == null || CollectionUtils.isEmpty(chartRequests) || datasetId == null) {
+            return Collections.emptyList();
+        }
+        List<SupersetChartCandidate> candidates = new ArrayList<>();
+        String supersetDomain = buildSupersetDomain(config);
+        for (int i = 0; i < chartRequests.size(); i++) {
+            SupersetChartBuildRequest request = chartRequests.get(i);
+            if (request == null || StringUtils.isBlank(request.getVizType())) {
+                continue;
+            }
+            String candidateDashboardTitle =
+                    buildCandidateDashboardTitle(dashboardTitle, request.getVizName(), i);
+            SupersetChartInfo chartInfo = client.createEmbeddedChart(sql, request.getChartName(),
+                    request.getVizType(), request.getFormData(), datasetId, databaseId, schema,
+                    dashboardTags, request.getDashboardHeight(), candidateDashboardTitle);
+            SupersetChartCandidate candidate = new SupersetChartCandidate();
+            candidate.setVizType(request.getVizType());
+            candidate.setVizName(request.getVizName());
+            candidate.setDashboardId(chartInfo.getDashboardId());
+            candidate.setDashboardTitle(chartInfo.getDashboardTitle());
+            candidate.setChartId(chartInfo.getChartId());
+            candidate.setChartUuid(chartInfo.getChartUuid());
+            candidate.setDashboardHeight(request.getDashboardHeight());
+            candidate.setGuestToken(chartInfo.getGuestToken());
+            candidate.setEmbeddedId(chartInfo.getEmbeddedId());
+            candidate.setSupersetDomain(supersetDomain);
+            candidates.add(candidate);
+        }
+        return candidates;
+    }
+
+    void populateFinalDashboardResponse(SupersetChartResp response, String dashboardTitle,
+            List<SupersetChartCandidate> chartCandidates, SupersetPluginConfig config,
+            List<Integer> chartHeights) {
+        if (response == null || CollectionUtils.isEmpty(chartCandidates)) {
+            return;
+        }
+        SupersetChartCandidate primary = chartCandidates.get(0);
+        response.setDashboardId(primary.getDashboardId());
+        response.setDashboardTitle(
+                StringUtils.defaultIfBlank(dashboardTitle, primary.getDashboardTitle()));
+        response.setGuestToken(primary.getGuestToken());
+        response.setEmbeddedId(primary.getEmbeddedId());
+        response.setSupersetDomain(StringUtils.defaultIfBlank(primary.getSupersetDomain(),
+                buildSupersetDomain(config)));
+        response.setVizType(primary.getVizType());
+        response.setVizTypeCandidates(chartCandidates);
+        response.setWebPage(buildWebPage(resolveDashboardHeight(chartHeights)));
+    }
+
+    private List<Integer> resolveChartHeights(List<SupersetChartBuildRequest> chartRequests) {
+        if (CollectionUtils.isEmpty(chartRequests)) {
+            return Collections.emptyList();
+        }
+        return chartRequests.stream().map(SupersetChartBuildRequest::getDashboardHeight)
+                .collect(Collectors.toList());
     }
 
     private String buildCandidateChartName(String baseName, String vizType, int index,
@@ -620,6 +674,16 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         String safeVizType =
                 StringUtils.defaultIfBlank(vizType, "candidate").replaceAll("[^a-zA-Z0-9_-]", "_");
         return baseName + "_" + safeVizType + "_" + (index + 1);
+    }
+
+    private String buildCandidateDashboardTitle(String baseTitle, String displayName, int index) {
+        String safeBase = StringUtils.defaultIfBlank(StringUtils.trimToEmpty(baseTitle),
+                "supersonic_dashboard");
+        String safeDisplay = sanitizeChartName(displayName);
+        if (StringUtils.isBlank(safeDisplay)) {
+            return safeBase + " - View " + (index + 1);
+        }
+        return safeBase + " - " + safeDisplay;
     }
 
     private String sanitizeChartName(String name) {
@@ -683,7 +747,14 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         FormDataProfile profile = resolveFormDataProfile(vizType);
         switch (profile) {
             case TABLE:
-                return buildTableFormData(context);
+                return buildTableFormData(context,
+                        shouldPreferRawTable(parseInfo, queryResult, context));
+            case PIVOT_TABLE:
+                return buildPivotTableFormData(context);
+            case TIME_TABLE:
+                return buildTimeTableFormData(context);
+            case TIME_PIVOT:
+                return buildTimePivotFormData(context);
             case TIME_SERIES:
                 return buildTimeSeriesFormData(context, false);
             case TIME_SERIES_MULTI:
@@ -741,9 +812,13 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         applyLlmKey(formData, llmKeys, "secondary_metric");
         applyLlmKey(formData, llmKeys, "tooltip_metrics");
         applyLlmKey(formData, llmKeys, "groupby");
+        applyLlmKey(formData, llmKeys, "groupbyRows");
+        applyLlmKey(formData, llmKeys, "groupbyColumns");
         applyLlmKey(formData, llmKeys, "columns");
         applyLlmKey(formData, llmKeys, "column");
+        applyLlmKey(formData, llmKeys, "column_collection");
         applyLlmKey(formData, llmKeys, "granularity_sqla");
+        applyLlmKey(formData, llmKeys, "time_grain_sqla");
         applyLlmKey(formData, llmKeys, "x_axis");
         applyLlmKey(formData, llmKeys, "y_axis");
         applyLlmKey(formData, llmKeys, "source");
@@ -1027,7 +1102,10 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         validateFieldListInSet(payload, "metrics_b", metricNames);
         validateFieldListInSet(payload, "tooltip_metrics", metricNames);
         validateFieldListInSet(payload, "groupby", columnNames);
+        validateFieldListInSet(payload, "groupbyRows", columnNames);
+        validateFieldListInSet(payload, "groupbyColumns", columnNames);
         validateFieldListInSet(payload, "columns", columnNames);
+        validateFieldListInSet(payload, "column_collection", columnNames);
         validateFieldInSet(payload, "column", columnNames);
         validateFieldListInSet(payload, "all_columns", columnNames);
         validateFieldInSet(payload, "granularity_sqla", columnNames);
@@ -1278,6 +1356,18 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
     }
 
     private FormDataProfile resolveFormDataProfile(String vizType) {
+        SupersetVizTypeSelector.VizTypeItem item =
+                SupersetVizTypeSelector.resolveItemByVizType(vizType, null);
+        if (item != null && item.getFormDataRules() != null
+                && StringUtils.isNotBlank(item.getFormDataRules().getProfile())) {
+            try {
+                return FormDataProfile
+                        .valueOf(StringUtils.upperCase(item.getFormDataRules().getProfile()));
+            } catch (Exception ex) {
+                log.debug("superset formData profile parse failed, vizType={}, profile={}", vizType,
+                        item.getFormDataRules().getProfile(), ex);
+            }
+        }
         String normalized = StringUtils.lowerCase(StringUtils.trimToEmpty(vizType));
         if (StringUtils.isBlank(normalized)) {
             return FormDataProfile.TABLE;
@@ -1353,8 +1443,39 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
         return FormDataProfile.GENERIC;
     }
 
-    private Map<String, Object> buildTableFormData(FormDataContext context) {
+    private boolean shouldPreferRawTable(SemanticParseInfo parseInfo, QueryResult queryResult,
+            FormDataContext context) {
+        boolean hasSemanticSelections =
+                parseInfo != null && (!CollectionUtils.isEmpty(parseInfo.getMetrics())
+                        || !CollectionUtils.isEmpty(parseInfo.getDimensions()));
+        if (queryResult != null && !CollectionUtils.isEmpty(queryResult.getQueryColumns())) {
+            if (queryResult.getAggregateInfo() != null) {
+                return false;
+            }
+            if (parseInfo == null || parseInfo.getAggType() == null) {
+                return true;
+            }
+            return StringUtils.equalsIgnoreCase("NONE", parseInfo.getAggType().name());
+        }
+        if (parseInfo != null && parseInfo.getAggType() != null
+                && !StringUtils.equalsIgnoreCase("NONE", parseInfo.getAggType().name())) {
+            return false;
+        }
+        if (context == null || CollectionUtils.isEmpty(context.columns)) {
+            return false;
+        }
+        return !hasSemanticSelections;
+    }
+
+    private Map<String, Object> buildTableFormData(FormDataContext context, boolean preferRaw) {
         Map<String, Object> formData = new HashMap<>();
+        if (preferRaw && !context.columns.isEmpty()) {
+            formData.put("query_mode", "raw");
+            formData.put("all_columns", context.columns);
+            formData.put("columns", context.columns);
+            applyTableDefaults(formData);
+            return formData;
+        }
         if (!context.metrics.isEmpty() || !context.dimensions.isEmpty()) {
             formData.put("query_mode", "aggregate");
             if (!context.metrics.isEmpty()) {
@@ -1377,6 +1498,58 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return formData;
         }
         throw new IllegalStateException("vizType requires columns");
+    }
+
+    private Map<String, Object> buildPivotTableFormData(FormDataContext context) {
+        requireMetrics(context, "pivot_table_v2");
+        List<String> rows = new ArrayList<>();
+        List<String> columns = new ArrayList<>();
+        if (!context.dimensions.isEmpty()) {
+            rows.add(context.dimensions.get(0));
+        }
+        if (context.dimensions.size() > 1) {
+            columns.add(context.dimensions.get(1));
+        }
+        if (rows.isEmpty() && columns.isEmpty()) {
+            throw new IllegalStateException("vizType requires dimensions: pivot_table_v2");
+        }
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("query_mode", "aggregate");
+        formData.put("metrics", context.metrics);
+        if (!rows.isEmpty()) {
+            formData.put("groupbyRows", rows);
+        }
+        if (!columns.isEmpty()) {
+            formData.put("groupbyColumns", columns);
+        }
+        return formData;
+    }
+
+    private Map<String, Object> buildTimeTableFormData(FormDataContext context) {
+        requireMetrics(context, "time_table");
+        if (StringUtils.isBlank(context.timeColumn)) {
+            throw new IllegalStateException("vizType requires time column");
+        }
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("query_mode", "aggregate");
+        formData.put("granularity_sqla", context.timeColumn);
+        formData.put("metrics", context.metrics);
+        if (!context.dimensions.isEmpty()) {
+            formData.put("groupby", context.dimensions);
+        }
+        return formData;
+    }
+
+    private Map<String, Object> buildTimePivotFormData(FormDataContext context) {
+        Object metric = requireSingleMetric(context, "time_pivot");
+        if (StringUtils.isBlank(context.timeColumn)) {
+            throw new IllegalStateException("vizType requires time column");
+        }
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("query_mode", "aggregate");
+        formData.put("granularity_sqla", context.timeColumn);
+        formData.put("metric", metric);
+        return formData;
     }
 
     private void applyTableDefaults(Map<String, Object> formData) {
@@ -1865,6 +2038,9 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
 
     private enum FormDataProfile {
         TABLE,
+        PIVOT_TABLE,
+        TIME_TABLE,
+        TIME_PIVOT,
         TIME_SERIES,
         TIME_SERIES_MULTI,
         KPI,
@@ -2202,6 +2378,19 @@ public class SupersetChartProcessor implements ExecuteResultProcessor {
             return LINE_CHART_HEIGHT;
         }
         return DEFAULT_SINGLE_CHART_HEIGHT;
+    }
+
+    private Integer resolveDashboardHeight(List<Integer> chartHeights) {
+        if (CollectionUtils.isEmpty(chartHeights)) {
+            return DEFAULT_SINGLE_CHART_HEIGHT;
+        }
+        int maxHeight = DEFAULT_SINGLE_CHART_HEIGHT;
+        for (Integer chartHeight : chartHeights) {
+            int resolved = chartHeight == null || chartHeight <= 0 ? DEFAULT_SINGLE_CHART_HEIGHT
+                    : chartHeight;
+            maxHeight = Math.max(maxHeight, resolved);
+        }
+        return maxHeight;
     }
 
     /**

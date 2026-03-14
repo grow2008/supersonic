@@ -191,10 +191,6 @@ public class SupersetSyncApiClient implements SupersetSyncClient {
         payload.put("database", datasetInfo.getDatabaseId());
         payload.put("schema", datasetInfo.getSchema());
         payload.put("table_name", datasetInfo.getTableName());
-        String description = StringUtils.trimToNull(datasetInfo.getDescription());
-        if (StringUtils.isNotBlank(description)) {
-            payload.put("description", description);
-        }
         String sql = StringUtils.trimToNull(datasetInfo.getSql());
         if (StringUtils.isNotBlank(sql)) {
             payload.put("sql", sql);
@@ -530,10 +526,6 @@ public class SupersetSyncApiClient implements SupersetSyncClient {
         payload.put("database_id", datasetInfo.getDatabaseId());
         payload.put("schema", datasetInfo.getSchema());
         payload.put("table_name", datasetInfo.getTableName());
-        String description = StringUtils.trimToNull(datasetInfo.getDescription());
-        if (StringUtils.isNotBlank(description)) {
-            payload.put("description", description);
-        }
         String sql = StringUtils.trimToNull(datasetInfo.getSql());
         if (StringUtils.isNotBlank(sql)) {
             payload.put("sql", sql);

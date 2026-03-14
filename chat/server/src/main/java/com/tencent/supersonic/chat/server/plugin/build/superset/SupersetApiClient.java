@@ -1,5 +1,7 @@
 package com.tencent.supersonic.chat.server.plugin.build.superset;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tencent.supersonic.common.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +33,7 @@ public class SupersetApiClient {
     private static final String DASHBOARD_ROOT_ID = "ROOT_ID";
     private static final String DASHBOARD_GRID_ID = "GRID_ID";
     private static final String DASHBOARD_ROW_ID = "ROW-1";
+    private static final String DASHBOARD_ROW_PREFIX = "ROW-";
     private static final String DASHBOARD_CHART_PREFIX = "CHART-";
     private static final String SINGLE_CHART_DASHBOARD_CSS =
             "html, body, #app { height: 100%; overflow: hidden; } "
@@ -39,6 +42,9 @@ public class SupersetApiClient {
                     + ".dashboard-component-chart-holder, .dashboard-component-chart-holder > div, "
                     + ".chart-container, .chart-container .chart, .slice_container { height: 100% !important; } "
                     + ".dashboard-component-chart-holder { margin: 0 !important; }";
+    private static final String STACKED_DASHBOARD_CSS = "html, body, #app { min-height: 100%; } "
+            + ".dashboard-content { padding: 0 !important; } "
+            + ".dashboard-component-chart-holder { margin: 0 !important; }";
     private static final String EMBEDDED_UI_CONFIG = "3";
     private static final String TAG_API = "/api/v1/tag/";
     private static final String LOGIN_API = "/api/v1/security/login";
@@ -98,29 +104,68 @@ public class SupersetApiClient {
         if (datasetId == null) {
             throw new IllegalStateException("superset datasetId is required");
         }
-        ChartTemplateSnapshot template = resolveTemplateChartSnapshot(vizType);
-        Map<String, Object> mergedFormData = mergeTemplateFormData(formData, template);
-        Long chartId = createChart(datasetId, vizType, mergedFormData, chartName);
-        String chartUuid = fetchChartUuid(chartId);
-        Long dashboardId = createDashboard(StringUtils.defaultIfBlank(dashboardTitle, chartName));
-        addChartToDashboard(dashboardId, chartId);
-        ensureDashboardChartLinked(dashboardId, chartId);
-        updateChartParams(chartId, dashboardId, mergedFormData, vizType, datasetId, template);
-        updateDashboardLayout(dashboardId, chartId, dashboardHeight);
+        String resolvedDashboardTitle = StringUtils.defaultIfBlank(dashboardTitle, chartName);
+        Long dashboardId = createDashboard(resolvedDashboardTitle);
+        SupersetChartInfo chartInfo =
+                createChartForDashboard(dashboardId, datasetId, chartName, vizType, formData);
+        updateDashboardLayout(dashboardId, chartInfo.getChartId(), dashboardHeight);
         addTagsToDashboard(dashboardId, dashboardTags);
         String embeddedUuid = ensureEmbeddedDashboardUuid(dashboardId);
         String guestToken = createGuestToken("dashboard", embeddedUuid);
         log.debug(
                 "superset embedded dashboard created, chartId={}, chartUuid={}, dashboardId={}, embeddedId={}, guestToken={}",
-                chartId, chartUuid, dashboardId, embeddedUuid, StringUtils.isNotBlank(guestToken));
-
-        SupersetChartInfo chartInfo = new SupersetChartInfo();
-        chartInfo.setDatasetId(datasetId);
-        chartInfo.setChartId(chartId);
-        chartInfo.setChartUuid(chartUuid);
+                chartInfo.getChartId(), chartInfo.getChartUuid(), dashboardId, embeddedUuid,
+                StringUtils.isNotBlank(guestToken));
+        chartInfo.setDashboardId(dashboardId);
+        chartInfo.setDashboardTitle(resolvedDashboardTitle);
         chartInfo.setGuestToken(guestToken);
         chartInfo.setEmbeddedId(embeddedUuid);
         return chartInfo;
+    }
+
+    public SupersetEmbeddedDashboardInfo createEmbeddedDashboard(String dashboardTitle,
+            List<SupersetChartBuildRequest> chartRequests, Long datasetId, Long databaseId,
+            String schema, List<String> dashboardTags) {
+        log.debug(
+                "superset createEmbeddedDashboard start, datasetId={}, databaseId={}, schema={}, chartCount={}",
+                datasetId, databaseId, schema, chartRequests == null ? 0 : chartRequests.size());
+        if (datasetId == null) {
+            throw new IllegalStateException("superset datasetId is required");
+        }
+        if (chartRequests == null || chartRequests.isEmpty()) {
+            throw new IllegalStateException("superset chart requests missing");
+        }
+        String resolvedTitle =
+                StringUtils.defaultIfBlank(dashboardTitle, chartRequests.get(0).getChartName());
+        Long dashboardId = createDashboard(resolvedTitle);
+        List<SupersetChartInfo> charts = new ArrayList<>();
+        List<Long> chartIds = new ArrayList<>();
+        List<Integer> chartHeights = new ArrayList<>();
+        for (SupersetChartBuildRequest request : chartRequests) {
+            if (request == null || StringUtils.isBlank(request.getVizType())) {
+                continue;
+            }
+            SupersetChartInfo chartInfo = createChartForDashboard(dashboardId, datasetId,
+                    request.getChartName(), request.getVizType(), request.getFormData());
+            charts.add(chartInfo);
+            chartIds.add(chartInfo.getChartId());
+            chartHeights.add(request.getDashboardHeight());
+        }
+        if (charts.isEmpty()) {
+            throw new IllegalStateException("superset chart build failed");
+        }
+        updateDashboardLayout(dashboardId, chartIds, chartHeights);
+        addTagsToDashboard(dashboardId, dashboardTags);
+        String embeddedUuid = ensureEmbeddedDashboardUuid(dashboardId);
+        String guestToken = createGuestToken("dashboard", embeddedUuid);
+        SupersetEmbeddedDashboardInfo dashboardInfo = new SupersetEmbeddedDashboardInfo();
+        dashboardInfo.setDashboardId(dashboardId);
+        dashboardInfo.setTitle(resolvedTitle);
+        dashboardInfo.setEmbeddedId(embeddedUuid);
+        dashboardInfo.setGuestToken(guestToken);
+        dashboardInfo.setDatasetId(datasetId);
+        dashboardInfo.setCharts(charts);
+        return dashboardInfo;
     }
 
     public List<SupersetDashboardInfo> listDashboards() {
@@ -191,6 +236,10 @@ public class SupersetApiClient {
     public String createEmbeddedGuestToken(String embeddedUuid) {
         String dashboardId = resolveEmbeddedDashboardId(embeddedUuid);
         if (StringUtils.isNotBlank(dashboardId)) {
+            Long resolvedDashboardId = parseLong(dashboardId);
+            if (resolvedDashboardId != null) {
+                ensureDashboardColorConfig(resolvedDashboardId);
+            }
             return createGuestToken("dashboard", dashboardId);
         }
         return createGuestToken("dashboard", embeddedUuid);
@@ -200,9 +249,36 @@ public class SupersetApiClient {
         if (dashboardId == null || chartId == null) {
             throw new IllegalStateException("superset dashboardId or chartId missing");
         }
+        List<Long> dashboardIds = resolveChartDashboardIds(chartId);
+        if (!dashboardIds.contains(dashboardId)) {
+            dashboardIds.add(dashboardId);
+        }
         Map<String, Object> payload = new HashMap<>();
-        payload.put("dashboards", Collections.singletonList(dashboardId));
+        payload.put("dashboards",
+                dashboardIds.isEmpty() ? Collections.singletonList(dashboardId) : dashboardIds);
         put(CHART_API + chartId, payload);
+    }
+
+    public void appendChartToDashboard(Long dashboardId, Long chartId) {
+        if (dashboardId == null || chartId == null) {
+            throw new IllegalStateException("superset dashboardId or chartId missing");
+        }
+        addChartToDashboard(dashboardId, chartId);
+        appendChartToDashboardLayout(dashboardId, chartId, null);
+    }
+
+    void appendChartToDashboardLayout(Long dashboardId, Long chartId, Integer dashboardHeight) {
+        if (dashboardId == null || chartId == null) {
+            return;
+        }
+        Map<String, Object> position = fetchDashboardPosition(dashboardId);
+        Map<String, Object> updated =
+                appendChartToDashboardPosition(position, chartId, dashboardHeight);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("position_json", JsonUtil.toString(updated));
+        payload.put("css", countDashboardCharts(updated) > 1 ? STACKED_DASHBOARD_CSS
+                : SINGLE_CHART_DASHBOARD_CSS);
+        put(DASHBOARD_API + dashboardId, payload);
     }
 
     void updateDashboardLayout(Long dashboardId, Long chartId, Integer dashboardHeight) {
@@ -218,6 +294,24 @@ public class SupersetApiClient {
         } catch (HttpStatusCodeException ex) {
             log.warn("superset dashboard layout update failed, dashboardId={}, chartId={}",
                     dashboardId, chartId, ex);
+        }
+    }
+
+    void updateDashboardLayout(Long dashboardId, List<Long> chartIds, List<Integer> chartHeights) {
+        if (dashboardId == null || chartIds == null || chartIds.isEmpty()) {
+            return;
+        }
+        Map<String, Object> position = buildDashboardPosition(chartIds, chartHeights);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("position_json", JsonUtil.toString(position));
+        payload.put("css",
+                chartIds.size() > 1 ? STACKED_DASHBOARD_CSS : SINGLE_CHART_DASHBOARD_CSS);
+        try {
+            put(DASHBOARD_API + dashboardId, payload);
+        } catch (HttpStatusCodeException ex) {
+            log.warn(
+                    "superset dashboard stacked layout update failed, dashboardId={}, chartCount={}",
+                    dashboardId, chartIds.size(), ex);
         }
     }
 
@@ -260,6 +354,122 @@ public class SupersetApiClient {
         return position;
     }
 
+    Map<String, Object> buildDashboardPosition(List<Long> chartIds, List<Integer> chartHeights) {
+        if (chartIds == null || chartIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        if (chartIds.size() == 1) {
+            Integer dashboardHeight =
+                    chartHeights == null || chartHeights.isEmpty() ? null : chartHeights.get(0);
+            return buildDashboardPosition(chartIds.get(0), dashboardHeight);
+        }
+        Map<String, Object> root = new HashMap<>();
+        root.put("type", "ROOT");
+        root.put("id", DASHBOARD_ROOT_ID);
+        root.put("meta", buildTransparentMeta());
+        root.put("children", Collections.singletonList(DASHBOARD_GRID_ID));
+
+        Map<String, Object> grid = new HashMap<>();
+        grid.put("type", "GRID");
+        grid.put("id", DASHBOARD_GRID_ID);
+        grid.put("meta", buildTransparentMeta());
+
+        List<String> rowIds = new ArrayList<>();
+        Map<String, Object> position = new HashMap<>();
+        position.put(DASHBOARD_ROOT_ID, root);
+        position.put(DASHBOARD_GRID_ID, grid);
+
+        for (int i = 0; i < chartIds.size(); i++) {
+            Long chartId = chartIds.get(i);
+            if (chartId == null) {
+                continue;
+            }
+            String rowId = DASHBOARD_ROW_PREFIX + (i + 1);
+            String chartKey = DASHBOARD_CHART_PREFIX + chartId;
+            int gridHeight = resolveDashboardGridHeight(resolveChartHeight(chartHeights, i));
+            Map<String, Object> row = new HashMap<>();
+            row.put("type", "ROW");
+            row.put("id", rowId);
+            Map<String, Object> rowMeta = buildTransparentMeta();
+            rowMeta.put("width", 12);
+            rowMeta.put("height", gridHeight);
+            row.put("meta", rowMeta);
+            row.put("children", Collections.singletonList(chartKey));
+
+            Map<String, Object> chart = new HashMap<>();
+            chart.put("type", "CHART");
+            chart.put("id", chartKey);
+            chart.put("children", Collections.emptyList());
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("chartId", chartId);
+            meta.put("width", 12);
+            meta.put("height", gridHeight);
+            meta.put("show_title", false);
+            chart.put("meta", meta);
+
+            rowIds.add(rowId);
+            position.put(rowId, row);
+            position.put(chartKey, chart);
+        }
+        grid.put("children", rowIds);
+        return position;
+    }
+
+    Map<String, Object> appendChartToDashboardPosition(Map<String, Object> position, Long chartId,
+            Integer dashboardHeight) {
+        if (chartId == null) {
+            return position == null ? Collections.emptyMap() : deepCopyMap(position);
+        }
+        Map<String, Object> resolved =
+                position == null ? buildEmptyDashboardPosition() : deepCopyMap(position);
+        if (resolved.isEmpty() || !resolved.containsKey(DASHBOARD_ROOT_ID)
+                || !resolved.containsKey(DASHBOARD_GRID_ID)) {
+            resolved = buildEmptyDashboardPosition();
+        }
+        String chartKey = DASHBOARD_CHART_PREFIX + chartId;
+        if (resolved.containsKey(chartKey)) {
+            return resolved;
+        }
+        Map<String, Object> root = resolveNode(resolved, DASHBOARD_ROOT_ID, "ROOT");
+        Map<String, Object> grid = resolveNode(resolved, DASHBOARD_GRID_ID, "GRID");
+        List<String> rootChildren = toMutableStringList(root.get("children"));
+        if (!rootChildren.contains(DASHBOARD_GRID_ID)) {
+            rootChildren.add(DASHBOARD_GRID_ID);
+        }
+        root.put("children", rootChildren);
+        List<String> rowIds = toMutableStringList(grid.get("children"));
+        String rowId = nextDashboardRowId(resolved);
+        int gridHeight = resolveDashboardGridHeight(dashboardHeight);
+
+        Map<String, Object> row = new HashMap<>();
+        row.put("type", "ROW");
+        row.put("id", rowId);
+        Map<String, Object> rowMeta = buildTransparentMeta();
+        rowMeta.put("width", 12);
+        rowMeta.put("height", gridHeight);
+        row.put("meta", rowMeta);
+        row.put("children", Collections.singletonList(chartKey));
+
+        Map<String, Object> chart = new HashMap<>();
+        chart.put("type", "CHART");
+        chart.put("id", chartKey);
+        chart.put("children", Collections.emptyList());
+        Map<String, Object> chartMeta = new HashMap<>();
+        chartMeta.put("chartId", chartId);
+        chartMeta.put("width", 12);
+        chartMeta.put("height", gridHeight);
+        chartMeta.put("show_title", false);
+        chart.put("meta", chartMeta);
+
+        rowIds.add(rowId);
+        grid.put("children", rowIds);
+        resolved.put(DASHBOARD_ROOT_ID, root);
+        resolved.put(DASHBOARD_GRID_ID, grid);
+        resolved.put(rowId, row);
+        resolved.put(chartKey, chart);
+        return resolved;
+    }
+
     private Map<String, Object> buildTransparentMeta() {
         Map<String, Object> meta = new HashMap<>();
         meta.put("background", "BACKGROUND_TRANSPARENT");
@@ -271,6 +481,129 @@ public class SupersetApiClient {
                 : dashboardHeight;
         int gridHeight = Math.round(height / (float) DASHBOARD_GRID_UNIT);
         return Math.max(1, gridHeight);
+    }
+
+    private Integer resolveChartHeight(List<Integer> chartHeights, int index) {
+        if (chartHeights == null || index < 0 || index >= chartHeights.size()) {
+            return null;
+        }
+        return chartHeights.get(index);
+    }
+
+    private Map<String, Object> fetchDashboardPosition(Long dashboardId) {
+        if (dashboardId == null) {
+            return Collections.emptyMap();
+        }
+        try {
+            Map<String, Object> response = get(DASHBOARD_API + dashboardId);
+            Map<String, Object> position = parseJsonMap(resolveValue(response, "position_json"));
+            if (position != null && !position.isEmpty()) {
+                return position;
+            }
+            Map<String, Object> result = resolveMap(response, "result");
+            position = parseJsonMap(resolveValue(result, "position_json"));
+            return position == null ? Collections.emptyMap() : position;
+        } catch (HttpStatusCodeException ex) {
+            if (HttpStatus.NOT_FOUND.equals(ex.getStatusCode())) {
+                log.warn(
+                        "superset dashboard position unavailable, fallback to empty layout, dashboardId={}",
+                        dashboardId);
+                return Collections.emptyMap();
+            }
+            throw ex;
+        }
+    }
+
+    private Map<String, Object> buildEmptyDashboardPosition() {
+        Map<String, Object> position = new HashMap<>();
+        Map<String, Object> root = new HashMap<>();
+        root.put("type", "ROOT");
+        root.put("id", DASHBOARD_ROOT_ID);
+        root.put("meta", buildTransparentMeta());
+        root.put("children", Collections.singletonList(DASHBOARD_GRID_ID));
+        Map<String, Object> grid = new HashMap<>();
+        grid.put("type", "GRID");
+        grid.put("id", DASHBOARD_GRID_ID);
+        grid.put("meta", buildTransparentMeta());
+        grid.put("children", new ArrayList<>());
+        position.put(DASHBOARD_ROOT_ID, root);
+        position.put(DASHBOARD_GRID_ID, grid);
+        return position;
+    }
+
+    private Map<String, Object> resolveNode(Map<String, Object> position, String nodeId,
+            String type) {
+        Object existing = position.get(nodeId);
+        if (existing instanceof Map) {
+            return new HashMap<>((Map<String, Object>) existing);
+        }
+        Map<String, Object> node = new HashMap<>();
+        node.put("type", type);
+        node.put("id", nodeId);
+        node.put("meta", buildTransparentMeta());
+        node.put("children", new ArrayList<>());
+        return node;
+    }
+
+    private List<String> toMutableStringList(Object value) {
+        List<String> result = new ArrayList<>();
+        if (!(value instanceof List)) {
+            return result;
+        }
+        for (Object item : (List<?>) value) {
+            if (item != null) {
+                result.add(String.valueOf(item));
+            }
+        }
+        return result;
+    }
+
+    private String nextDashboardRowId(Map<String, Object> position) {
+        int maxIndex = 0;
+        for (String key : position.keySet()) {
+            if (StringUtils.startsWith(key, DASHBOARD_ROW_PREFIX)) {
+                try {
+                    int index = Integer.parseInt(key.substring(DASHBOARD_ROW_PREFIX.length()));
+                    maxIndex = Math.max(maxIndex, index);
+                } catch (NumberFormatException ex) {
+                    log.debug("superset row id parse ignored, rowId={}", key);
+                }
+            }
+        }
+        return DASHBOARD_ROW_PREFIX + (maxIndex + 1);
+    }
+
+    private int countDashboardCharts(Map<String, Object> position) {
+        if (position == null || position.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (Object value : position.values()) {
+            if (!(value instanceof Map)) {
+                continue;
+            }
+            Object type = ((Map<?, ?>) value).get("type");
+            if ("CHART".equals(type)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private SupersetChartInfo createChartForDashboard(Long dashboardId, Long datasetId,
+            String chartName, String vizType, Map<String, Object> formData) {
+        ChartTemplateSnapshot template = resolveTemplateChartSnapshot(vizType);
+        Map<String, Object> mergedFormData = mergeTemplateFormData(formData, template);
+        Long chartId = createChart(datasetId, vizType, mergedFormData, chartName);
+        String chartUuid = fetchChartUuid(chartId);
+        addChartToDashboard(dashboardId, chartId);
+        ensureDashboardChartLinked(dashboardId, chartId);
+        updateChartParams(chartId, dashboardId, mergedFormData, vizType, datasetId, template);
+        SupersetChartInfo chartInfo = new SupersetChartInfo();
+        chartInfo.setDatasetId(datasetId);
+        chartInfo.setChartId(chartId);
+        chartInfo.setChartUuid(chartUuid);
+        return chartInfo;
     }
 
     private void updateChartParams(Long chartId, Long dashboardId, Map<String, Object> formData,
@@ -620,6 +953,53 @@ public class SupersetApiClient {
         return null;
     }
 
+    private List<Long> resolveChartDashboardIds(Long chartId) {
+        if (chartId == null) {
+            return new ArrayList<>();
+        }
+        try {
+            Map<String, Object> response = get(CHART_API + chartId);
+            return resolveChartDashboardIds(response);
+        } catch (Exception ex) {
+            log.debug("superset chart dashboard fetch failed, chartId={}", chartId, ex);
+        }
+        return new ArrayList<>();
+    }
+
+    private List<Long> resolveChartDashboardIds(Map<String, Object> response) {
+        List<Long> dashboardIds = new ArrayList<>();
+        Object dashboards = resolveValue(response, "dashboards");
+        if (dashboards == null) {
+            Map<String, Object> result = resolveMap(response, "result");
+            dashboards = resolveValue(result, "dashboards");
+        }
+        collectDashboardIds(dashboards, dashboardIds);
+        return dashboardIds;
+    }
+
+    private void collectDashboardIds(Object value, List<Long> dashboardIds) {
+        if (value == null || dashboardIds == null) {
+            return;
+        }
+        if (value instanceof List) {
+            for (Object item : (List<?>) value) {
+                collectDashboardIds(item, dashboardIds);
+            }
+            return;
+        }
+        if (value instanceof Map) {
+            Long dashboardId = parseLong(((Map<?, ?>) value).get("id"));
+            if (dashboardId != null && !dashboardIds.contains(dashboardId)) {
+                dashboardIds.add(dashboardId);
+            }
+            return;
+        }
+        Long dashboardId = parseLong(value);
+        if (dashboardId != null && !dashboardIds.contains(dashboardId)) {
+            dashboardIds.add(dashboardId);
+        }
+    }
+
     private Map<String, Object> resolveChartParams(Map<String, Object> response) {
         Object params = resolveValue(response, "params");
         if (params == null) {
@@ -943,7 +1323,91 @@ public class SupersetApiClient {
         if (dashboardId == null) {
             throw new IllegalStateException("superset dashboard create failed");
         }
+        ensureDashboardColorConfig(dashboardId);
         return dashboardId;
+    }
+
+    private void ensureDashboardColorConfig(Long dashboardId) {
+        if (dashboardId == null) {
+            return;
+        }
+        try {
+            Map<String, Object> metadata = fetchDashboardJsonMetadata(dashboardId);
+            if (!needsDashboardColorInitialization(metadata)) {
+                return;
+            }
+            ObjectNode payload = buildDashboardColorConfigPayload(metadata);
+            log.debug("superset dashboard color payload, dashboardId={}, payload={}", dashboardId,
+                    JsonUtil.toString(payload));
+            put(DASHBOARD_API + dashboardId + "/colors?mark_updated=false", payload);
+        } catch (Exception ex) {
+            log.warn("superset dashboard color init failed, dashboardId={}", dashboardId, ex);
+        }
+    }
+
+    private Map<String, Object> fetchDashboardJsonMetadata(Long dashboardId) {
+        if (dashboardId == null) {
+            return new HashMap<>();
+        }
+        Map<String, Object> response = get(DASHBOARD_API + dashboardId);
+        Object metadata = resolveValue(response, "json_metadata");
+        if (metadata == null) {
+            Map<String, Object> result = resolveMap(response, "result");
+            metadata = resolveValue(result, "json_metadata");
+        }
+        Map<String, Object> parsed = parseJsonMap(metadata);
+        return parsed == null ? new HashMap<>() : parsed;
+    }
+
+    private boolean needsDashboardColorInitialization(Map<String, Object> metadata) {
+        if (metadata == null) {
+            return true;
+        }
+        return !metadata.containsKey("color_namespace") || !metadata.containsKey("color_scheme")
+                || !(metadata.get("color_scheme_domain") instanceof List)
+                || !(metadata.get("shared_label_colors") instanceof List)
+                || !(metadata.get("map_label_colors") instanceof Map)
+                || !(metadata.get("label_colors") instanceof Map);
+    }
+
+    private ObjectNode buildDashboardColorConfigPayload(Map<String, Object> metadata) {
+        Map<String, Object> resolved = metadata == null ? new HashMap<>() : metadata;
+        ObjectMapper objectMapper = JsonUtil.INSTANCE.getObjectMapper();
+        ObjectNode payload = objectMapper.createObjectNode();
+        if (resolved.containsKey("color_namespace") && resolved.get("color_namespace") != null) {
+            payload.set("color_namespace",
+                    objectMapper.valueToTree(resolved.get("color_namespace")));
+        } else {
+            payload.putNull("color_namespace");
+        }
+        if (resolved.containsKey("color_scheme") && resolved.get("color_scheme") != null) {
+            payload.set("color_scheme", objectMapper.valueToTree(resolved.get("color_scheme")));
+        } else {
+            payload.putNull("color_scheme");
+        }
+        payload.set("color_scheme_domain",
+                objectMapper.valueToTree(copyObjectList(resolved.get("color_scheme_domain"))));
+        payload.set("shared_label_colors",
+                objectMapper.valueToTree(copyObjectList(resolved.get("shared_label_colors"))));
+        payload.set("map_label_colors",
+                objectMapper.valueToTree(copyObjectMap(resolved.get("map_label_colors"))));
+        payload.set("label_colors",
+                objectMapper.valueToTree(copyObjectMap(resolved.get("label_colors"))));
+        return payload;
+    }
+
+    private List<Object> copyObjectList(Object value) {
+        if (!(value instanceof List)) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>((List<Object>) value);
+    }
+
+    private Map<String, Object> copyObjectMap(Object value) {
+        if (!(value instanceof Map)) {
+            return new HashMap<>();
+        }
+        return new HashMap<>((Map<String, Object>) value);
     }
 
     private String fetchDashboardUuid(Long dashboardId) {

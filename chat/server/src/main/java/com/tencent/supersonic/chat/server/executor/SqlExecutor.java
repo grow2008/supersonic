@@ -86,9 +86,8 @@ public class SqlExecutor implements ChatQueryExecutor {
         }
 
         if (shouldSkipSqlExecution(executeContext, parseInfo)) {
-            QueryResult queryResult =
-                    buildSupersetPlaceholderResult(executeContext, parseInfo, semanticLayer,
-                            chatCtx, chatContextService);
+            QueryResult queryResult = buildSupersetPlaceholderResult(executeContext, parseInfo,
+                    semanticLayer, chatCtx, chatContextService);
             if (queryResult != null) {
                 return queryResult;
             }
