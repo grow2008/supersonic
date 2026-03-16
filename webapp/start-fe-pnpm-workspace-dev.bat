@@ -1,6 +1,10 @@
 @echo off
 
 for /f "delims=" %%i in ('node -v') do set "node_version=%%i"
+node -e "try { process.binding('http_parser'); } catch (error) { console.error('Current Node.js ' + process.version + ' is incompatible with the Supersonic frontend toolchain because webpack-dev-server depends on the removed internal module http_parser. Please use Node.js 18 or 20 LTS.'); process.exit(1); }"
+if errorlevel 1 (
+  exit /b 1
+)
 
 for /f "tokens=2 delims=v." %%i in ("%node_version%") do set "major_version=%%i"
 
