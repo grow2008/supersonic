@@ -1,6 +1,10 @@
 #!/bin/bash
 
 node_version=$(node -v)
+node -e "try { process.binding('http_parser'); } catch (error) { console.error('Current Node.js ' + process.version + ' is incompatible with the Supersonic frontend toolchain because webpack-dev-server depends on the removed internal module http_parser. Please use Node.js 18 or 20 LTS.'); process.exit(1); }"
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 major_version=$(echo $node_version | cut -d'.' -f1 | tr -d 'v')
 

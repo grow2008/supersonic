@@ -12,19 +12,22 @@ if "%service%"=="" (
     set service=%standalone_service%
 )
 
-call mvn help:evaluate -Dexpression=project.version > temp.txt
-for /f "delims=" %%i in (temp.txt) do (
-    set line=%%i
-    if not "!line:~0,1!"=="[" (
-        set MVN_VERSION=!line!
+if /I not "%service%"=="webapp" (
+    call mvn help:evaluate -Dexpression=project.version > temp.txt
+    for /f "delims=" %%i in (temp.txt) do (
+        set line=%%i
+        if not "!line:~0,1!"=="[" (
+            set MVN_VERSION=!line!
+        )
     )
+    del temp.txt
 )
-del temp.txt
 cd %baseDir%
 
 
 if "%service%"=="webapp" (
    call :buildWebapp
+   IF ERRORLEVEL 1 EXIT /B 1
    set "targetPath=%projectDir%\launchers\%standalone_service%\target\classes"
    tar xvf "%projectDir%\webapp\supersonic-webapp.tar.gz" -C "!targetPath!"
    if exist "!targetPath!\webapp" rmdir /s /q "!targetPath!\webapp"
@@ -32,8 +35,11 @@ if "%service%"=="webapp" (
    goto :EOF
 ) else (
    call :buildJavaService
+   IF ERRORLEVEL 1 EXIT /B 1
    call :buildWebapp
+   IF ERRORLEVEL 1 EXIT /B 1
    call :packageRelease
+   IF ERRORLEVEL 1 EXIT /B 1
    goto :EOF
 )
 
@@ -70,7 +76,16 @@ if "%service%"=="webapp" (
 :buildWebapp
    echo "starting building supersonic webapp"
    cd %projectDir%\webapp
+   if exist supersonic-webapp.tar.gz del /q supersonic-webapp.tar.gz
    call start-fe-prod.bat
+   IF ERRORLEVEL 1 (
+        ECHO Failed to build frontend webapp.
+        EXIT /B 1
+   )
+   if not exist supersonic-webapp.tar.gz (
+        ECHO Frontend build did not produce supersonic-webapp.tar.gz.
+        EXIT /B 1
+   )
    copy /y supersonic-webapp.tar.gz %buildDir%\
    rem check build result
    IF ERRORLEVEL 1 (
