@@ -42,3 +42,5 @@ bin/
 *.bak.*
 
 .venv/
+.env
+.run/
