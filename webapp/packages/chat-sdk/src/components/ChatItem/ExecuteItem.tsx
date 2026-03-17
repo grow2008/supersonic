@@ -3,7 +3,6 @@ import { CheckCircleFilled, InfoCircleOutlined } from '@ant-design/icons';
 import { PREFIX_CLS, MsgContentTypeEnum } from '../../common/constants';
 import { MsgDataType } from '../../common/type';
 import ChatMsg from '../ChatMsg';
-import MarkDown from '../ChatMsg/MarkDown';
 import SupersetChart from '../ChatMsg/SupersetChart';
 import WebPage from '../ChatMsg/WebPage';
 import Loading from './Loading';
